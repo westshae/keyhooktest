@@ -1,11 +1,17 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-const contactTable = sqliteTable("contacts", {
+const slotTable = sqliteTable("slots", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  phone: text("phone").notNull(),
-  email: text("email"),
-  address: text("address").notNull(),
+  date: text("date").notNull(),
+  start_time: text("start_time").notNull(),
+  slot_time_in_minutes: integer("slot_time_in_minutes").notNull(),
 });
 
-export { contactTable };
+const bookingTable = sqliteTable("bookings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tenant_id: integer("tenant_id").notNull(),
+  tenant_name: text("tenant_name").notNull(),
+  slot_id: integer("slot_id").notNull(),
+});
+
+export { slotTable, bookingTable };
