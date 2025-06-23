@@ -1,5 +1,6 @@
 # Setup and run commands:
 yarn install
+yarn db:push
 yarn dev
 
 # Recruiter
