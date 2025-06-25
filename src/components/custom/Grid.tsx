@@ -96,13 +96,18 @@ export default function Grid({
 
     // Calculate which cell we're over
     const cellWidth = rect.width / 8; // 8 columns (time + 7 days)
-    const cellHeight = rect.height / 17; // 17 hours
+    
+    // Get the actual header height by finding the header element
+    const headerElement = gridRef.current.querySelector('.grid-cols-8.bg-gray-100');
+    const headerHeight = headerElement ? headerElement.getBoundingClientRect().height : 0;
+    const gridContentHeight = rect.height - headerHeight;
+    const cellHeight = gridContentHeight / 17; // 17 hours
     
     const day = Math.floor(x / cellWidth) - 1; // -1 for time column
-    const hour = Math.floor(y / cellHeight) + 5; // +5 because we start from 5 AM
+    const hour = Math.floor((y - headerHeight) / cellHeight) + 5; // +5 because we start from 5 AM
     
     // Calculate sub-cell (4 per hour)
-    const subCellY = y % cellHeight;
+    const subCellY = (y - headerHeight) % cellHeight;
     const subCell = Math.floor(subCellY / (cellHeight / 4));
 
     // Clamp values
