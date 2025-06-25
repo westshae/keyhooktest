@@ -246,7 +246,7 @@ export default function Grid({
                         key={subCell}
                         className={`cursor-pointer transition-colors ${
                           event
-                            ? `${event.color || 'bg-blue-500'} text-white`
+                            ? ''
                             : isInDragRange
                               ? 'bg-blue-200'
                               : 'hover:bg-gray-50'
@@ -254,11 +254,7 @@ export default function Grid({
                         onClick={() => handleSubCellClick(dayIndex, hour, subCell)}
                         onMouseDown={() => handleMouseDown(dayIndex, hour, subCell)}
                       >
-                        {event && (
-                          <div className="p-0.5 text-xs font-medium truncate">
-                            {event.title}
-                          </div>
-                        )}
+                        {/* No event title in subcell, only in Card */}
                       </div>
                     );
                   })}

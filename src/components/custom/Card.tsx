@@ -15,32 +15,16 @@ interface CardProps {
 
 export default function Card({ 
   title, 
-  startHour, 
-  startSubCell, 
-  endHour, 
-  endSubCell, 
   color = 'bg-blue-500',
   onDelete,
   style
 }: CardProps) {
-  const formatTime = (hour: number, subCell: number) => {
-    const hour12 = hour % 12 === 0 ? 12 : hour % 12;
-    const ampm = hour < 12 ? 'AM' : 'PM';
-    const minutes = subCell * 15;
-    return minutes === 0
-      ? `${hour12} ${ampm}`
-      : `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-  };
-
   return (
     <div 
-      className={`${color} text-white rounded-sm p-1 text-xs font-medium shadow-sm border border-white/20 absolute group`}
+      className={`${color} text-white rounded-sm p-0.5 text-xs font-medium shadow-sm border border-white/20 absolute group flex items-center justify-start`}
       style={style}
     >
-      <div className="truncate">{title}</div>
-      <div className="text-xs opacity-75">
-        {formatTime(startHour, startSubCell)} - {formatTime(endHour, endSubCell)}
-      </div>
+      <div className="truncate text-xs">{title}</div>
       {onDelete && (
         <button
           onClick={onDelete}
