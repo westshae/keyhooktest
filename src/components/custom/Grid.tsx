@@ -164,14 +164,14 @@ export default function Grid({
 
     const startTime = startHour * 4 + startSubCell;
     const endTime = currentHour * 4 + currentSubCell;
-    
-    const [startHourFinal, startSubCellFinal] = startTime <= endTime 
-      ? [startHour, startSubCell] 
-      : [currentHour, currentSubCell];
-    
-    const [endHourFinal, endSubCellFinal] = startTime <= endTime 
-      ? [currentHour, currentSubCell] 
-      : [startHour, startSubCell];
+
+    const startSubCellFinal = startTime <= endTime 
+      ? startSubCell 
+      : currentSubCell;
+
+    const endSubCellFinal = startTime <= endTime 
+      ? currentSubCell 
+      : startSubCell;
 
     return (
       <div 

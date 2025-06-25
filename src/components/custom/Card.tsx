@@ -15,7 +15,6 @@ interface CardProps {
 
 export default function Card({ 
   title, 
-  startDay, 
   startHour, 
   startSubCell, 
   endHour, 
