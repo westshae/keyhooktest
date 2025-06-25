@@ -24,6 +24,10 @@ export default function Availability() {
     setIsEditing(!isEditing);
   };
 
+  const handleRefresh = () => {
+    setEditEvents([]);
+  };
+
   const handleCellClick = (day: number, hour: number, subCell: number) => {
     console.log(`Clicked: Day ${day}, Hour ${hour}, Sub-cell ${subCell} in ${isEditing ? 'edit' : 'view'} mode`);
   };
@@ -58,12 +62,22 @@ export default function Availability() {
             <h2 className="text-xl font-semibold">
               {isEditing ? 'Edit state' : 'View state'}
             </h2>
-            <button
-              onClick={toggleEdit}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              {isEditing ? 'Save' : 'Edit'}
-            </button>
+            <div className="flex gap-2">
+              {isEditing && (
+                <button
+                  onClick={handleRefresh}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                >
+                  Refresh
+                </button>
+              )}
+              <button
+                onClick={toggleEdit}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                {isEditing ? 'Save' : 'Edit'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
