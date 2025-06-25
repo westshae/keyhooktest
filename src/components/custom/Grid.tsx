@@ -223,7 +223,7 @@ export default function Grid({
       const startIndex = timeToSubCellIndex(slot.startHour, slot.startSubCell);
       const endIndex = timeToSubCellIndex(slot.endHour, slot.endSubCell);
       const top = (startIndex / totalSubCellsInGrid) * 100;
-      const height = ((endIndex - startIndex + 1) / totalSubCellsInGrid) * 100;
+      const height = ((endIndex - startIndex + 1) / totalSubCellsInGrid) * 100 + 0.1; // add a small overlap
 
       previewCards.push(
         <div 
@@ -325,7 +325,7 @@ export default function Grid({
                 const startIndex = (event.startHour - 5) * 4 + event.startSubCell;
                 const endIndex = (event.endHour - 5) * 4 + event.endSubCell;
                 const top = (startIndex / totalSubCells) * 100;
-                const height = ((endIndex - startIndex + 1) / totalSubCells) * 100;
+                const height = ((endIndex - startIndex + 1) / totalSubCells) * 100 + 0.1; // add a small overlap
                 return (
                   <Card
                     key={event.id}

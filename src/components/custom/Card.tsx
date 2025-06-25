@@ -21,14 +21,14 @@ export default function Card({
 }: CardProps) {
   return (
     <div 
-      className={`${color} text-white rounded-sm p-0.5 text-xs font-medium shadow-sm border border-white/20 absolute group flex items-center justify-start`}
+      className={`${color} text-white rounded-sm text-xs font-medium shadow-sm absolute group flex items-center justify-start`}
       style={style}
     >
-      <div className="truncate text-xs">{title}</div>
+      <div className="truncate text-xs flex-1 pl-2 py-0.5">{title}</div>
       {onDelete && (
         <button
           onClick={onDelete}
-          className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+          className="bg-red-500 text-white min-w-[1.5rem] h-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-r-sm rounded-l-none text-xs font-bold p-0 m-0 border-0"
         >
           ×
         </button>
