@@ -105,12 +105,10 @@ const backendToCardFormat = (availability: BackendAvailability): Card => {
     return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
   };
   
-  // Calculate the actual end time by adding 30 minutes to the start time
+  // Calculate the end time to match how findAvailableSlots creates slots (next sub-cell)
   const startTime = formatTime(startHour, startSubCell);
-  const totalStartMinutes = startHour * 60 + startSubCell * 15;
-  const totalEndMinutes = totalStartMinutes + 30; // Add 30 minutes for the slot duration
-  const endHour = Math.floor(totalEndMinutes / 60);
-  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
+  const endSubCell = (startSubCell + 1) % 4;
+  const endHour = startSubCell === 3 ? startHour + 1 : startHour; // If we wrap to next hour
   const endTime = formatTime(endHour, endSubCell);
   
   const title = `${startTime} - ${endTime}`;
@@ -151,12 +149,10 @@ const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
     return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
   };
   
-  // Calculate the actual end time by adding 30 minutes to the start time
+  // Calculate the end time to match how findAvailableSlots creates slots (next sub-cell)
   const startTime = formatTime(startHour, startSubCell);
-  const totalStartMinutes = startHour * 60 + startSubCell * 15;
-  const totalEndMinutes = totalStartMinutes + 30; // Add 30 minutes for the slot duration
-  const endHour = Math.floor(totalEndMinutes / 60);
-  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
+  const endSubCell = (startSubCell + 1) % 4;
+  const endHour = startSubCell === 3 ? startHour + 1 : startHour; // If we wrap to next hour
   const endTime = formatTime(endHour, endSubCell);
   
   const title = `${startTime} - ${endTime} (${booking.tenant_name})`;

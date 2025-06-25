@@ -12,22 +12,24 @@ export const postAvailability = async (availabilities: NewAvailability[]) => {
   const insertedRecords = [];
   
   for (const availability of availabilities) {
+    // Force time_in_minutes to always be 30
+    const fixedAvailability = { ...availability, time_in_minutes: 30 };
     // Check if a record with the same date, start_time, and time_in_minutes already exists
     const existingRecord = await db
       .select()
       .from(availabilityTable)
       .where(
         and(
-          eq(availabilityTable.date, availability.date),
-          eq(availabilityTable.start_time, availability.start_time),
-          eq(availabilityTable.time_in_minutes, availability.time_in_minutes)
+          eq(availabilityTable.date, fixedAvailability.date),
+          eq(availabilityTable.start_time, fixedAvailability.start_time),
+          eq(availabilityTable.time_in_minutes, fixedAvailability.time_in_minutes)
         )
       )
       .limit(1);
     
     // Only insert if no duplicate exists
     if (existingRecord.length === 0) {
-      const newRecord = await db.insert(availabilityTable).values(availability);
+      const newRecord = await db.insert(availabilityTable).values(fixedAvailability);
       insertedRecords.push(newRecord);
     }
   }

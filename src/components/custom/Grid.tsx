@@ -355,9 +355,9 @@ export default function Grid({
                     // Highlight if in drag range
                     let isInDragRange = false;
                     if (dragState?.isDragging && dragState.startDay === dayIndex) {
-                      const startIdx = dragState.startHour * 4 + dragState.startSubCell;
-                      const endIdx = dragState.currentHour * 4 + dragState.currentSubCell;
-                      const cellIdx = hour * 4 + subCell;
+                      const startIdx = timeToSubCellIndex(dragState.startHour, dragState.startSubCell);
+                      const endIdx = timeToSubCellIndex(dragState.currentHour, dragState.currentSubCell);
+                      const cellIdx = timeToSubCellIndex(hour, subCell);
                       const [minIdx, maxIdx] = startIdx <= endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
                       isInDragRange = cellIdx >= minIdx && cellIdx <= maxIdx;
                     }
@@ -388,9 +388,10 @@ export default function Grid({
               .filter(event => event.startDay === dayIndex)
               .map(event => {
                 // Calculate top/height for absolute positioning using percentages
+                // Use the actual grid dimensions (totalHours and gridStartHour) for consistent positioning
                 const totalSubCells = totalHours * 4; // totalHours * 4 sub-cells per hour
-                const startIndex = (event.startHour - gridStartHour) * 4 + event.startSubCell;
-                const endIndex = (event.endHour - gridStartHour) * 4 + event.endSubCell;
+                const startIndex = timeToSubCellIndex(event.startHour, event.startSubCell);
+                const endIndex = timeToSubCellIndex(event.endHour, event.endSubCell);
                 const top = (startIndex / totalSubCells) * 100;
                 const height = ((endIndex - startIndex + 1) / totalSubCells) * 100 + 0.1; // add a small overlap
                 return (
