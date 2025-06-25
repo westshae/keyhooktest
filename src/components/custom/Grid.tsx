@@ -227,13 +227,24 @@ export default function Grid({
                 <div className="grid grid-rows-4 h-full">
                   {[0, 1, 2, 3].map((subCell) => {
                     const event = getEventForSubCell(dayIndex, hour, subCell);
+                    // Highlight if in drag range
+                    let isInDragRange = false;
+                    if (dragState?.isDragging && dragState.startDay === dayIndex) {
+                      const startIdx = dragState.startHour * 4 + dragState.startSubCell;
+                      const endIdx = dragState.currentHour * 4 + dragState.currentSubCell;
+                      const cellIdx = hour * 4 + subCell;
+                      const [minIdx, maxIdx] = startIdx <= endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+                      isInDragRange = cellIdx >= minIdx && cellIdx <= maxIdx;
+                    }
                     return (
                       <div
                         key={subCell}
                         className={`cursor-pointer transition-colors ${
                           event
                             ? `${event.color || 'bg-blue-500'} text-white`
-                            : 'hover:bg-gray-50'
+                            : isInDragRange
+                              ? 'bg-blue-200'
+                              : 'hover:bg-gray-50'
                         }`}
                         onClick={() => handleSubCellClick(dayIndex, hour, subCell)}
                         onMouseDown={() => handleMouseDown(dayIndex, hour, subCell)}
