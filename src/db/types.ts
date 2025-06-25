@@ -1,9 +1,9 @@
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { slotTable, bookingTable } from "./schema";
+import { availabilityTable, bookingTable } from "./schema";
 
 // Slot types
-export type Slot = InferSelectModel<typeof slotTable>;
-export type NewSlot = InferInsertModel<typeof slotTable>;
+export type Availability = InferSelectModel<typeof availabilityTable>;
+export type NewAvailability = InferInsertModel<typeof availabilityTable>;
 
 // Booking types
 export type Booking = InferSelectModel<typeof bookingTable>;
