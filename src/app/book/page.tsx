@@ -94,12 +94,22 @@ const availabilityToCardFormat = (availability: Availability): Card => {
   };
 };
 
+// Helper function to obfuscate email address
+const obfuscateEmail = (email: string): string => {
+  const [localPart, domain] = email.split('@');
+  if (localPart.length <= 2) {
+    return `${localPart[0]}***@${domain}`;
+  }
+  return `${localPart[0]}***${localPart[localPart.length - 1]}@${domain}`;
+};
+
 export default function Book() {
   const [selectedTenant, setSelectedTenant] = useState<Tenant>(tenantData[0]);
   const [availableSlots, setAvailableSlots] = useState<Card[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isBooking, setIsBooking] = useState(false);
 
@@ -173,9 +183,10 @@ export default function Book() {
       // Remove the booked slot from the available slots
       setAvailableSlots(prev => prev.filter(card => card.id !== selectedCard.id));
       
-      // Close confirmation dialog
+      // Close confirmation dialog and show success popup
       setShowConfirmation(false);
       setSelectedCard(null);
+      setShowSuccessPopup(true);
     } catch (error) {
       console.error('Error creating booking:', error);
       setError('Failed to create booking. Please try again.');
@@ -187,6 +198,10 @@ export default function Book() {
   const handleCancelBooking = () => {
     setShowConfirmation(false);
     setSelectedCard(null);
+  };
+
+  const handleReturnToHome = () => {
+    window.location.href = '/';
   };
 
   if (isLoading) {
@@ -289,6 +304,33 @@ export default function Book() {
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
               >
                 {isBooking ? 'Booking...' : 'Confirm Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Booking Confirmed!
+              </h3>
+              <p className="text-gray-600 mb-6">
+                We&apos;ve sent the confirmation to <span className="font-medium">{obfuscateEmail(selectedTenant.email)}</span>
+              </p>
+              <button
+                onClick={handleReturnToHome}
+                className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Return to Home
               </button>
             </div>
           </div>
