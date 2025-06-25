@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Clock, Users, CheckCircle, ArrowLeft, Calendar, Mail, Phone } from 'lucide-react';
+import { Clock, Users, CheckCircle, ArrowLeft, Calendar, Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 interface Tenant {
@@ -113,6 +113,26 @@ const obfuscateEmail = (email: string): string => {
     return `${localPart[0]}***@${domain}`;
   }
   return `${localPart[0]}***${localPart[localPart.length - 1]}@${domain}`;
+};
+
+// Helper function to generate a random meeting place address
+const getMeetingPlace = (tenantId: number) => {
+  const meetingPlaces = [
+    '123 Main Street, Downtown District',
+    '456 Oak Avenue, Riverside Heights',
+    '789 Pine Boulevard, Westside Gardens',
+    '321 Elm Court, Eastside Commons',
+    '654 Maple Drive, Northside Plaza',
+    '987 Cedar Lane, Southside Village',
+    '147 Birch Road, Central Park Area',
+    '258 Spruce Way, Harbor View District',
+    '369 Willow Street, Mountain View Heights',
+    '741 Aspen Circle, Lakefront Promenade'
+  ];
+  
+  // Use tenant ID to consistently get the same address for each tenant
+  const index = (tenantId - 1) % meetingPlaces.length;
+  return meetingPlaces[index] || meetingPlaces[0];
 };
 
 export default function Book() {
@@ -361,6 +381,10 @@ export default function Book() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-3 w-3" />
                 <span>{selectedTenant.phone}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                <span><strong>Meeting Place:</strong> {getMeetingPlace(selectedTenant.id)}</span>
               </div>
             </div>
           </div>
