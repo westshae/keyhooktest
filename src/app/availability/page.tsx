@@ -50,7 +50,7 @@ export default function Availability() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6 flex flex-col min-h-screen">
       <div className="content">
         <div>
           <div className="flex justify-between items-center mb-4">

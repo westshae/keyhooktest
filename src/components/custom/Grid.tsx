@@ -38,7 +38,7 @@ export default function Grid({
   onCardDelete 
 }: GridProps) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const hours = Array.from({ length: 20 }, (_, i) => i + 5); // Start from 5 AM, 20 hours total
+  const hours = Array.from({ length: 17 }, (_, i) => i + 5); // Start from 5 AM, 17 hours total (5 AM to 9 PM)
   
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -96,7 +96,7 @@ export default function Grid({
 
     // Calculate which cell we're over
     const cellWidth = rect.width / 8; // 8 columns (time + 7 days)
-    const cellHeight = rect.height / 20; // 20 hours
+    const cellHeight = rect.height / 17; // 17 hours
     
     const day = Math.floor(x / cellWidth) - 1; // -1 for time column
     const hour = Math.floor(y / cellHeight) + 5; // +5 because we start from 5 AM
@@ -107,7 +107,7 @@ export default function Grid({
 
     // Clamp values
     const clampedDay = Math.max(0, Math.min(6, day));
-    const clampedHour = Math.max(5, Math.min(24, hour));
+    const clampedHour = Math.max(5, Math.min(21, hour)); // Changed max from 24 to 21 (9 PM)
     const clampedSubCell = Math.max(0, Math.min(3, subCell));
 
     setDragState(prev => prev ? {
