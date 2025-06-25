@@ -1,45 +1,21 @@
-// import { NextRequest, NextResponse } from 'next/server';
-// import { db } from '@/db';
-// // import { contactTable } from '@/db/schema';
+import { NextResponse } from 'next/server';
 
-// export async function GET() {
-//   try {
-//     // const contacts = await db.select().from(contactTable);
-//     return NextResponse.json({ contacts });
-//   } catch (error) {
-//     console.error('Error fetching contacts:', error);
-//     return NextResponse.json(
-//       { error: 'Failed to fetch contacts' },
-//       { status: 500 }
-//     );
-//   }
-// }
+export async function GET() {
+  // Placeholder for GET method
+  return NextResponse.json({ data: null });
+}
 
-// export async function POST(request: NextRequest) {
-//   try {
-//     const body = await request.json();
-//     const { name, phone, email, address } = body;
+export async function POST() {
+  // Placeholder for POST method
+  return NextResponse.json({ data: null }, { status: 201 });
+}
 
-//     if (!name || !phone || !address) {
-//       return NextResponse.json(
-//         { error: 'Name, phone, and address are required' },
-//         { status: 400 }
-//       );
-//     }
+export async function PUT() {
+  // Placeholder for PUT method
+  return NextResponse.json({ data: null });
+}
 
-//     const newContact = await db.insert(contactTable).values({
-//       name,
-//       phone,
-//       email,
-//       address,
-//     }).returning();
-
-//     return NextResponse.json({ contact: newContact[0] }, { status: 201 });
-//   } catch (error) {
-//     console.error('Error creating contact:', error);
-//     return NextResponse.json(
-//       { error: 'Failed to create contact' },
-//       { status: 500 }
-//     );
-//   }
-// } 
+export async function DELETE() {
+  // Placeholder for DELETE method
+  return NextResponse.json({ data: null });
+} 
