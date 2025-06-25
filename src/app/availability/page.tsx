@@ -21,11 +21,20 @@ export default function Availability() {
   const [editEvents, setEditEvents] = useState<Card[]>([]);
 
   const toggleEdit = () => {
-    setIsEditing(!isEditing);
+    if (isEditing) {
+      // Save: Transfer edit state to overview
+      setViewEvents([...editEvents]);
+      setIsEditing(false);
+    } else {
+      // Enter edit mode: Copy current overview to edit state
+      setEditEvents([...viewEvents]);
+      setIsEditing(true);
+    }
   };
 
   const handleRefresh = () => {
-    setEditEvents([]);
+    // Refresh: Reset edit state to match overview data
+    setEditEvents([...viewEvents]);
   };
 
   const handleCellClick = (day: number, hour: number, subCell: number) => {
