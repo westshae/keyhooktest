@@ -19,3 +19,51 @@ export const newAvailabilitySchema = z.object({
 
 export const bulkAvailabilitySchema = z.array(newAvailabilitySchema);
 export const deleteIdsSchema = z.array(z.number());
+
+// Tenant booking validation schemas
+export const getTenantBookingsSchema = z.string().url().transform((url) => {
+  const searchParams = new URL(url).searchParams;
+  const tenantId = searchParams.get('tenantId');
+  
+  if (!tenantId) {
+    throw new z.ZodError([
+      {
+        code: 'custom',
+        path: ['tenantId'],
+        message: 'tenantId is required'
+      }
+    ]);
+  }
+  
+  const tenantIdNumber = parseInt(tenantId, 10);
+  if (isNaN(tenantIdNumber) || tenantIdNumber <= 0) {
+    throw new z.ZodError([
+      {
+        code: 'custom',
+        path: ['tenantId'],
+        message: 'tenantId must be a positive integer'
+      }
+    ]);
+  }
+  
+  return { tenantId: tenantIdNumber };
+});
+
+export type GetTenantBookingsParams = z.infer<typeof getTenantBookingsSchema>;
+
+// Create tenant booking validation schema
+export const createTenantBookingSchema = z.object({
+  tenant_id: z.number().positive().describe("Tenant ID must be a positive integer"),
+  tenant_name: z.string().min(1).describe("Tenant name is required"),
+  slot_id: z.number().positive().describe("Slot ID must be a positive integer"),
+});
+
+export type CreateTenantBookingParams = z.infer<typeof createTenantBookingSchema>;
+
+// Delete tenant booking validation schema
+export const deleteTenantBookingSchema = z.object({
+  tenant_id: z.number().positive().describe("Tenant ID must be a positive integer"),
+  booking_id: z.number().positive().describe("Booking ID must be a positive integer"),
+});
+
+export type DeleteTenantBookingParams = z.infer<typeof deleteTenantBookingSchema>;
