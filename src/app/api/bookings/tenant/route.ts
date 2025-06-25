@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTenantBookings, createTenantBooking, deleteTenantBooking } from './service';
-import { getTenantBookingsSchema, createTenantBookingSchema, deleteTenantBookingSchema } from '@/db/types';
+import { createTenantBooking, deleteTenantBooking, getFreeAvailability } from './service';
+import { createTenantBookingSchema, deleteTenantBookingSchema } from '@/db/types';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const params = getTenantBookingsSchema.parse(request.url);
-    const bookings = await getTenantBookings(params.tenantId);
-    return NextResponse.json({ data: bookings });
+    const freeAvailability = await getFreeAvailability();
+    return NextResponse.json({ data: freeAvailability });
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Invalid tenantId parameter' },
-        { status: 400 }
-      );
-    }
-    
-    console.error('Error fetching tenant bookings:', error);
+    console.error('Error fetching free availability:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch free availability' },
       { status: 500 }
     );
   }

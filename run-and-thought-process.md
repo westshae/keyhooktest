@@ -94,6 +94,7 @@ I also plan to include a section of the header for settings, such as 'reset all 
 2. Due to this, the tenant overview page is being scrapped. This includes the tenant 'get' endpoint.
 3. In production, an email/sms would be sent instead.
 4. In addition to these changes, the pages have removed their tenant/pm url parent.
+5. The availability/free GET endpoint will be moved into the bookings/tenant route to replace the above endpoint.
 
 # Breakdown of pages
 1. It's clear the grid needs to be a component.
