@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit3, Save, RefreshCw, X, Calendar, Eye, Trash2 } from 'lucide-react';
+import { Edit3, Save, RefreshCw, X, Calendar, Eye, Trash2, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface Card {
   id: string;
@@ -464,6 +465,12 @@ export default function Availability() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
+              <Link 
+                href="/"
+                className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 text-foreground" />
+              </Link>
               <div className="w-10 h-10 bg-gradient-to-r from-primary to-purple-600 rounded-xl flex items-center justify-center">
                 <Calendar className="h-5 w-5 text-white" />
               </div>
