@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Grid from '@/components/custom/Grid';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface Card {
   id: string;
@@ -13,6 +22,8 @@ interface Card {
   endHour: number;
   endSubCell: number;
   color?: string;
+  availabilityId?: number;
+  tenantName?: string;
 }
 
 interface BackendAvailability {
@@ -140,7 +151,7 @@ const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
     if (hour === 0) return `12:${minutes.toString().padStart(2, '0')} AM`;
     if (hour === 12) return `12:${minutes.toString().padStart(2, '0')} PM`;
     if (hour > 12) return `${hour - 12}:${minutes.toString().padStart(2, '0')} PM`;
-    return `${hour}:${minutes.toString().padStart(2, '0')} PM`;
+    return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
   };
   
   const title = `${formatTime(startHour, startSubCell)} - ${formatTime(endHour, endSubCell)} (${booking.tenant_name})`;
@@ -155,6 +166,7 @@ const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
     endHour,
     endSubCell,
     color: 'bg-purple-500', // Purple for bookings
+    tenantName: booking.tenant_name,
   };
 };
 
@@ -163,9 +175,12 @@ export default function Availability() {
   const [viewEvents, setViewEvents] = useState<Card[]>([]);
   const [editEvents, setEditEvents] = useState<Card[]>([]);
   const [deletedCardIds, setDeletedCardIds] = useState<string[]>([]);
+  const [deletedBookingIds, setDeletedBookingIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
 
   // Load data from backend on component mount
   useEffect(() => {
@@ -219,7 +234,7 @@ export default function Availability() {
       // Filter out booking cards - only process availability cards
       const availabilityCards = cards.filter(card => card.id.startsWith('card-'));
       
-      // Delete the specific cards that were marked for deletion
+      // Delete the specific availability cards that were marked for deletion
       if (deletedCardIds.length > 0) {
         // Convert card IDs to numeric IDs for the backend
         const numericIds = deletedCardIds
@@ -240,6 +255,34 @@ export default function Availability() {
           
           if (!deleteResponse.ok) {
             throw new Error('Failed to delete availability records');
+          }
+        }
+      }
+
+      // Delete the specific booking cards that were marked for deletion
+      if (deletedBookingIds.length > 0) {
+        // Convert booking IDs to numeric IDs for the backend
+        const numericIds = deletedBookingIds
+          .map(id => {
+            const numericId = parseInt(id.replace('booking-', ''));
+            return isNaN(numericId) ? null : numericId;
+          })
+          .filter((id): id is number => id !== null);
+        
+        if (numericIds.length > 0) {
+          // Delete each booking individually
+          for (const bookingId of numericIds) {
+            const deleteResponse = await fetch('/api/bookings/pm', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ booking_id: bookingId }),
+            });
+            
+            if (!deleteResponse.ok) {
+              throw new Error('Failed to delete booking records');
+            }
           }
         }
       }
@@ -265,6 +308,7 @@ export default function Availability() {
       await loadAvailability();
       // Clear the deleted card IDs since they've been processed
       setDeletedCardIds([]);
+      setDeletedBookingIds([]);
     } catch (error) {
       console.error('Error saving availability:', error);
       setError('Failed to save availability data');
@@ -279,25 +323,26 @@ export default function Availability() {
       await saveAvailability(editEvents);
       setIsEditing(false);
     } else {
-      // Enter edit mode: Copy only availability cards to edit state (exclude booking cards)
-      const availabilityCards = viewEvents.filter(card => card.id.startsWith('card-'));
-      setEditEvents(availabilityCards);
+      // Enter edit mode: Copy all cards to edit state (include booking cards)
+      setEditEvents([...viewEvents]);
       setDeletedCardIds([]); // Clear any previous deletion tracking
+      setDeletedBookingIds([]); // Clear any previous booking deletion tracking
       setIsEditing(true);
     }
   };
 
   const handleRefresh = () => {
-    // Refresh: Reset edit state to match current availability data (exclude booking cards)
-    const availabilityCards = viewEvents.filter(card => card.id.startsWith('card-'));
-    setEditEvents(availabilityCards);
+    // Refresh: Reset edit state to match current data (include booking cards)
+    setEditEvents([...viewEvents]);
     setDeletedCardIds([]); // Clear deletion tracking
+    setDeletedBookingIds([]); // Clear booking deletion tracking
   };
 
   const handleReturnWithoutSaving = () => {
     // Exit edit mode without saving - revert to original view state
     setIsEditing(false);
     setDeletedCardIds([]); // Clear deletion tracking
+    setDeletedBookingIds([]); // Clear booking deletion tracking
   };
 
   const handleCellClick = (day: number, hour: number, subCell: number) => {
@@ -319,20 +364,46 @@ export default function Availability() {
 
   const handleCardDelete = (cardId: string) => {
     if (isEditing) {
-      // Only remove from edit state - changes will be saved when user clicks "Save"
-      setEditEvents(prev => prev.filter(card => card.id !== cardId));
-      // Track the deleted card ID for later deletion from database
-      setDeletedCardIds(prev => [...prev, cardId]);
+      // Find the card to get additional info for confirmation
+      const card = editEvents.find(c => c.id === cardId);
+      
+      if (card?.id.startsWith('booking-')) {
+        // This is a booking - show confirmation modal
+        setCardToDelete(card);
+        setShowDeleteConfirmation(true);
+      } else {
+        // This is an availability card - delete immediately
+        setEditEvents(prev => prev.filter(card => card.id !== cardId));
+        setDeletedCardIds(prev => [...prev, cardId]);
+      }
     } else {
       // In view mode, we shouldn't be able to delete cards
-      // This should not happen as delete buttons are only shown in edit mode
       console.warn('Attempted to delete card in view mode');
     }
+  };
+
+  const handleConfirmBookingDelete = () => {
+    if (cardToDelete) {
+      // Remove from edit state
+      setEditEvents(prev => prev.filter(card => card.id !== cardToDelete.id));
+      // Track the deleted booking ID for later deletion from database
+      setDeletedBookingIds(prev => [...prev, cardToDelete.id]);
+    }
+    setShowDeleteConfirmation(false);
+    setCardToDelete(null);
+  };
+
+  const handleCancelBookingDelete = () => {
+    setShowDeleteConfirmation(false);
+    setCardToDelete(null);
   };
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = () => {
     if (!isEditing) return false;
+    
+    // Check if any cards were deleted
+    if (deletedCardIds.length > 0 || deletedBookingIds.length > 0) return true;
     
     // Filter to only availability cards for comparison
     const viewAvailabilityCards = viewEvents.filter(card => card.id.startsWith('card-'));
@@ -464,6 +535,42 @@ export default function Availability() {
           )}
         </div>
       </div>
+
+      {/* Booking Deletion Confirmation Modal */}
+      <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this booking with {cardToDelete?.tenantName}?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-gray-50 p-3 rounded mb-4">
+            <p className="text-sm text-gray-700">
+              <strong>Time:</strong> {cardToDelete?.title}
+            </p>
+            <p className="text-sm text-gray-700">
+              <strong>Tenant:</strong> {cardToDelete?.tenantName}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCancelBookingDelete}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmBookingDelete}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Confirm Cancellation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
