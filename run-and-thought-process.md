@@ -67,9 +67,8 @@ I also plan to include a section of the header for settings, such as 'reset all 
 # Endpoint planning
 1. api/availability
   - GET: Gets the currently stored availability of the PM
-  - PUT: Modify availability in bulk for PM
   - POST: Add availability in bulk for PM
-  - DELETE: Remove in bulk availability
+  - DELETE: Remove in bulk availability for PM
 2. api/availability/free
   - GET: Gets all availabilities, minus existing bookings, for Tenant.
 3. api/bookings/pm
