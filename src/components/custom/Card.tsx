@@ -21,7 +21,7 @@ export default function Card({
 }: CardProps) {
   return (
     <div 
-      className={`${color} text-white rounded-sm text-xs font-medium shadow-sm absolute group flex items-center justify-start`}
+      className={`${color} text-white rounded-sm text-xs font-medium shadow-sm absolute group flex items-center justify-start border border-white`}
       style={style}
     >
       <div className="truncate text-xs flex-1 pl-2 py-0.5">{title}</div>

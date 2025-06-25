@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Grid from '@/components/custom/Grid';
 
 interface Card {
@@ -15,26 +15,207 @@ interface Card {
   color?: string;
 }
 
+interface BackendAvailability {
+  id: number;
+  date: string;
+  start_time: string;
+  time_in_minutes: number;
+}
+
+// Helper function to convert frontend card format to backend format
+const cardToBackendFormat = (card: Card): BackendAvailability[] => {
+  const availabilities: BackendAvailability[] = [];
+  
+  // Convert the card's time range to backend format
+  const startMinutes = card.startHour * 60 + card.startSubCell * 15;
+  const endMinutes = card.endHour * 60 + card.endSubCell * 15;
+  const durationMinutes = Math.max(0, endMinutes - startMinutes);
+  
+  // Convert day index to date (assuming current week)
+  const today = new Date();
+  const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const daysToAdd = (card.startDay - currentDayOfWeek + 7) % 7;
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + daysToAdd);
+  
+  // Format date as DD-MM-YYYY
+  const day = targetDate.getDate().toString().padStart(2, '0');
+  const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+  const year = targetDate.getFullYear();
+  const dateString = `${day}-${month}-${year}`;
+  
+  // Convert minutes to HH:MM format
+  const hours = Math.floor(startMinutes / 60);
+  const minutes = startMinutes % 60;
+  const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  
+  // Extract numeric ID if it exists, otherwise use timestamp
+  const numericId = card.id.startsWith('card-') ? 
+    parseInt(card.id.replace('card-', '')) : 
+    Date.now();
+  
+  availabilities.push({
+    id: isNaN(numericId) ? Date.now() : numericId,
+    date: dateString,
+    start_time: timeString,
+    time_in_minutes: durationMinutes,
+  });
+  
+  return availabilities;
+};
+
+// Helper function to convert backend format to frontend card format
+const backendToCardFormat = (availability: BackendAvailability): Card => {
+  // Parse the date to get day of week
+  const [day, month, year] = availability.date.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const startDay = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Parse the start time
+  const [hours, minutes] = availability.start_time.split(':').map(Number);
+  const startHour = hours;
+  const startSubCell = Math.floor(minutes / 15);
+  
+  // Calculate end time
+  const totalStartMinutes = hours * 60 + minutes;
+  const totalEndMinutes = totalStartMinutes + availability.time_in_minutes;
+  const endHour = Math.floor(totalEndMinutes / 60);
+  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
+  
+  // Create title from time range
+  const formatTime = (hour: number, subCell: number) => {
+    const minutes = subCell * 15;
+    if (hour === 0) return `12:${minutes.toString().padStart(2, '0')} AM`;
+    if (hour === 12) return `12:${minutes.toString().padStart(2, '0')} PM`;
+    if (hour > 12) return `${hour - 12}:${minutes.toString().padStart(2, '0')} PM`;
+    return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
+  };
+  
+  const title = `${formatTime(startHour, startSubCell)} - ${formatTime(endHour, endSubCell)}`;
+  
+  return {
+    id: `card-${availability.id}`,
+    title,
+    startDay,
+    startHour,
+    startSubCell,
+    endDay: startDay, // Same day for now
+    endHour,
+    endSubCell,
+    color: 'bg-blue-500',
+  };
+};
+
 export default function Availability() {
   const [isEditing, setIsEditing] = useState(false);
   const [viewEvents, setViewEvents] = useState<Card[]>([]);
   const [editEvents, setEditEvents] = useState<Card[]>([]);
+  const [deletedCardIds, setDeletedCardIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleEdit = () => {
+  // Load data from backend on component mount
+  useEffect(() => {
+    loadAvailability();
+  }, []);
+
+  const loadAvailability = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch('/api/availability');
+      if (!response.ok) {
+        throw new Error('Failed to load availability');
+      }
+      const result = await response.json();
+      const cards = result.data.map(backendToCardFormat);
+      setViewEvents(cards);
+    } catch (error) {
+      console.error('Error loading availability:', error);
+      setError('Failed to load availability data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveAvailability = async (cards: Card[]) => {
+    try {
+      setIsSaving(true);
+      setError(null);
+      
+      // Delete the specific cards that were marked for deletion
+      if (deletedCardIds.length > 0) {
+        // Convert card IDs to numeric IDs for the backend
+        const numericIds = deletedCardIds
+          .map(id => {
+            const numericId = parseInt(id.replace('card-', ''));
+            return isNaN(numericId) ? null : numericId;
+          })
+          .filter((id): id is number => id !== null);
+        
+        if (numericIds.length > 0) {
+          const deleteResponse = await fetch('/api/availability', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(numericIds),
+          });
+          
+          if (!deleteResponse.ok) {
+            throw new Error('Failed to delete availability records');
+          }
+        }
+      }
+      
+      // Convert all cards to backend format and save
+      const backendData = cards.flatMap(cardToBackendFormat);
+      
+      if (backendData.length > 0) {
+        const response = await fetch('/api/availability', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(backendData),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save availability');
+        }
+      }
+      
+      // Update both view and edit states with the saved data
+      setViewEvents(cards);
+      setEditEvents(cards);
+      // Clear the deleted card IDs since they've been processed
+      setDeletedCardIds([]);
+    } catch (error) {
+      console.error('Error saving availability:', error);
+      setError('Failed to save availability data');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleEdit = async () => {
     if (isEditing) {
-      // Save: Transfer edit state to overview
-      setViewEvents([...editEvents]);
+      // Save: Transfer edit state to backend
+      await saveAvailability(editEvents);
       setIsEditing(false);
     } else {
       // Enter edit mode: Copy current overview to edit state
       setEditEvents([...viewEvents]);
+      setDeletedCardIds([]); // Clear any previous deletion tracking
       setIsEditing(true);
     }
   };
 
   const handleRefresh = () => {
-    // Refresh: Reset edit state to match overview data
+    // Refresh: Reset edit state to match current view data
     setEditEvents([...viewEvents]);
+    setDeletedCardIds([]); // Clear deletion tracking
   };
 
   const handleCellClick = (day: number, hour: number, subCell: number) => {
@@ -56,11 +237,63 @@ export default function Availability() {
 
   const handleCardDelete = (cardId: string) => {
     if (isEditing) {
+      // Only remove from edit state - changes will be saved when user clicks "Save"
       setEditEvents(prev => prev.filter(card => card.id !== cardId));
+      // Track the deleted card ID for later deletion from database
+      setDeletedCardIds(prev => [...prev, cardId]);
     } else {
-      setViewEvents(prev => prev.filter(card => card.id !== cardId));
+      // In view mode, we shouldn't be able to delete cards
+      // This should not happen as delete buttons are only shown in edit mode
+      console.warn('Attempted to delete card in view mode');
     }
   };
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = () => {
+    if (!isEditing) return false;
+    
+    // Check if the number of cards changed
+    if (viewEvents.length !== editEvents.length) return true;
+    
+    // Create maps for easier comparison by ID
+    const viewCardsMap = new Map(viewEvents.map(card => [card.id, card]));
+    const editCardsMap = new Map(editEvents.map(card => [card.id, card]));
+    
+    // Check if any cards were added or removed
+    for (const [id, viewCard] of viewCardsMap) {
+      const editCard = editCardsMap.get(id);
+      if (!editCard) return true; // Card was removed
+      
+      // Check if card properties changed
+      if (
+        viewCard.title !== editCard.title ||
+        viewCard.startDay !== editCard.startDay ||
+        viewCard.startHour !== editCard.startHour ||
+        viewCard.startSubCell !== editCard.startSubCell ||
+        viewCard.endDay !== editCard.endDay ||
+        viewCard.endHour !== editCard.endHour ||
+        viewCard.endSubCell !== editCard.endSubCell ||
+        viewCard.color !== editCard.color
+      ) {
+        return true;
+      }
+    }
+    
+    // Check if any new cards were added
+    for (const [id] of editCardsMap) {
+      if (!viewCardsMap.has(id)) return true;
+    }
+    
+    return false;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-lg">Loading availability...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col">
@@ -76,18 +309,31 @@ export default function Availability() {
                 <button
                   onClick={handleRefresh}
                   className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                  disabled={isSaving}
                 >
                   Refresh
                 </button>
               )}
               <button
                 onClick={toggleEdit}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className={`px-4 py-2 rounded disabled:opacity-50 ${
+                  isEditing 
+                    ? hasUnsavedChanges() 
+                      ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                      : 'bg-green-500 hover:bg-green-600 text-white'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
+                disabled={isSaving}
               >
-                {isEditing ? 'Save' : 'Edit'}
+                {isSaving ? 'Saving...' : isEditing ? (hasUnsavedChanges() ? 'Save Changes' : 'Save') : 'Edit'}
               </button>
             </div>
           </div>
+          {error && (
+            <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
         </div>
       </div>
 
