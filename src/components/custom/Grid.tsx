@@ -187,13 +187,13 @@ export default function Grid({
   return (
     <div 
       ref={gridRef}
-      className="border border-gray-300 rounded-lg overflow-hidden relative"
+      className="border border-gray-300 rounded-lg overflow-hidden relative h-full flex flex-col"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
       {/* Day Headers */}
-      <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-300">
+      <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-300 flex-shrink-0">
         <div className="p-2 border-r border-gray-300 bg-gray-50"></div>
         {days.map((day) => (
           <div
@@ -206,13 +206,13 @@ export default function Grid({
       </div>
 
       {/* Time Grid */}
-      <div className="grid grid-cols-8 relative">
+      <div className="grid grid-cols-8 relative flex-1">
         {/* Time Labels */}
-        <div className="border-r border-gray-300">
+        <div className="border-r border-gray-300 flex flex-col">
           {hours.map((hour) => (
             <div
               key={hour}
-              className="h-8 border-b border-gray-200 flex items-center justify-end pr-2 text-xs text-gray-500"
+              className="flex-1 border-b border-gray-200 flex items-center justify-end pr-2 text-xs text-gray-500 min-h-0"
             >
               {formatTime(hour)}
             </div>
@@ -221,9 +221,9 @@ export default function Grid({
 
         {/* Grid Cells */}
         {days.map((_, dayIndex) => (
-          <div key={dayIndex} className="border-r border-gray-300 last:border-r-0 relative h-full">
+          <div key={dayIndex} className="border-r border-gray-300 last:border-r-0 relative flex flex-col">
             {hours.map((hour) => (
-              <div key={hour} className="h-8 border-b border-gray-200">
+              <div key={hour} className="flex-1 border-b border-gray-200 min-h-0">
                 <div className="grid grid-rows-4 h-full">
                   {[0, 1, 2, 3].map((subCell) => {
                     const event = getEventForSubCell(dayIndex, hour, subCell);
@@ -264,13 +264,12 @@ export default function Grid({
             {events
               .filter(event => event.startDay === dayIndex)
               .map(event => {
-                // Calculate top/height for absolute positioning
-                const hourHeight = 32; // h-8 = 32px
-                const subCellHeight = hourHeight / 4; // 8px
+                // Calculate top/height for absolute positioning using percentages
+                const totalSubCells = 17 * 4; // 17 hours * 4 sub-cells per hour
                 const startIndex = (event.startHour - 5) * 4 + event.startSubCell;
                 const endIndex = (event.endHour - 5) * 4 + event.endSubCell;
-                const top = startIndex * subCellHeight;
-                const height = (endIndex - startIndex + 1) * subCellHeight;
+                const top = (startIndex / totalSubCells) * 100;
+                const height = ((endIndex - startIndex + 1) / totalSubCells) * 100;
                 return (
                   <Card
                     key={event.id}
@@ -286,8 +285,8 @@ export default function Grid({
                     style={{
                       left: 0,
                       right: 0,
-                      top,
-                      height,
+                      top: `${top}%`,
+                      height: `${height}%`,
                       zIndex: 20,
                     }}
                   />

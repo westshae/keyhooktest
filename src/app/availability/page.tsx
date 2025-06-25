@@ -50,10 +50,11 @@ export default function Availability() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 flex flex-col min-h-screen">
-      <div className="content">
-        <div>
-          <div className="flex justify-between items-center mb-4">
+    <div className="h-screen flex flex-col">
+      {/* Header */}
+      <div className="flex-shrink-0 p-6 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">
               {isEditing ? 'Edit state' : 'View state'}
             </h2>
@@ -67,33 +68,38 @@ export default function Availability() {
         </div>
       </div>
 
-      {/* View Mode Grid */}
-      {!isEditing && (
-        <div className="mb-8">
-          <div className="overflow-x-auto border-2 border-blue-200 rounded-lg">
-            <Grid 
-              onCellClick={handleCellClick} 
-              events={viewEvents}
-              isEditMode={false}
-            />
-          </div>
-        </div>
-      )}
+      {/* Grid Container */}
+      <div className="flex-1 p-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full">
+          {/* View Mode Grid */}
+          {!isEditing && (
+            <div className="h-full">
+              <div className="h-full overflow-x-auto border-2 border-blue-200 rounded-lg">
+                <Grid 
+                  onCellClick={handleCellClick} 
+                  events={viewEvents}
+                  isEditMode={false}
+                />
+              </div>
+            </div>
+          )}
 
-      {/* Edit Mode Grid */}
-      {isEditing && (
-        <div className="mb-8">
-          <div className="overflow-x-auto border-2 border-orange-200 rounded-lg">
-            <Grid 
-              onCellClick={handleCellClick} 
-              events={editEvents}
-              isEditMode={true}
-              onCardCreate={handleCardCreate}
-              onCardDelete={handleCardDelete}
-            />
-          </div>
+          {/* Edit Mode Grid */}
+          {isEditing && (
+            <div className="h-full">
+              <div className="h-full overflow-x-auto border-2 border-orange-200 rounded-lg">
+                <Grid 
+                  onCellClick={handleCellClick} 
+                  events={editEvents}
+                  isEditMode={true}
+                  onCardCreate={handleCardCreate}
+                  onCardDelete={handleCardDelete}
+                />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 } 
