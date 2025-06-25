@@ -313,6 +313,7 @@ export default function Book() {
                 onCellClick={() => {}} // No cell click functionality needed
                 events={availableSlots}
                 isEditMode={false}
+                dynamicTimeRange={true} // Enable dynamic time range based on available slots
                 onCardClick={handleCardClick}
               />
             </div>

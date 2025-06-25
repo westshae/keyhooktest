@@ -19,6 +19,7 @@ interface GridProps {
     availabilityId?: number;
   }>;
   isEditMode?: boolean;
+  dynamicTimeRange?: boolean;
   onCardCreate?: (card: {
     title: string;
     startDay: number;
@@ -48,12 +49,43 @@ export default function Grid({
   onCellClick, 
   events = [], 
   isEditMode = false,
+  dynamicTimeRange = false,
   onCardCreate,
   onCardDelete,
   onCardClick
 }: GridProps) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const hours = Array.from({ length: 17 }, (_, i) => i + 5); // Start from 5 AM, 17 hours total (5 AM to 9 PM)
+  
+  // Calculate dynamic time range based on events
+  const calculateTimeRange = () => {
+    if (!dynamicTimeRange || events.length === 0) {
+      // Default range: 5 AM to 9 PM (17 hours)
+      return {
+        startHour: 5,
+        endHour: 21,
+        totalHours: 17
+      };
+    }
+
+    // Find the earliest start time and latest end time from all events
+    let earliestHour = Infinity;
+    let latestHour = -Infinity;
+
+    events.forEach(event => {
+      earliestHour = Math.min(earliestHour, event.startHour);
+      latestHour = Math.max(latestHour, event.endHour);
+    });
+
+    // Add some padding (1 hour before earliest, 1 hour after latest)
+    const startHour = Math.max(0, earliestHour - 1);
+    const endHour = Math.min(23, latestHour + 1);
+    const totalHours = endHour - startHour + 1;
+
+    return { startHour, endHour, totalHours };
+  };
+
+  const { startHour: gridStartHour, endHour: gridEndHour, totalHours } = calculateTimeRange();
+  const hours = Array.from({ length: totalHours }, (_, i) => i + gridStartHour);
   
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -97,9 +129,9 @@ export default function Grid({
     );
   };
 
-  // Helper function to convert time to subcell index
+  // Helper function to convert time to subcell index (updated for dynamic range)
   const timeToSubCellIndex = (hour: number, subCell: number) => {
-    return (hour - 5) * 4 + subCell; // -5 because we start from 5 AM
+    return (hour - gridStartHour) * 4 + subCell;
   };
 
   // Helper function to check if a time range overlaps with any existing events
@@ -129,9 +161,9 @@ export default function Grid({
     
     // Look for consecutive 2-subcell slots, stepping by 2 to avoid overlap
     for (let i = minIndex; i <= maxIndex - 1; i += 2) { // Step by 2 instead of 1
-      const slotStartHour = Math.floor(i / 4) + 5;
+      const slotStartHour = Math.floor(i / 4) + gridStartHour;
       const slotStartSubCell = i % 4;
-      const slotEndHour = Math.floor((i + 1) / 4) + 5;
+      const slotEndHour = Math.floor((i + 1) / 4) + gridStartHour;
       const slotEndSubCell = (i + 1) % 4;
       
       // Check if this 2-subcell slot is available
@@ -182,10 +214,10 @@ export default function Grid({
     const headerElement = gridRef.current.querySelector('.grid-cols-8.bg-gradient-to-r');
     const headerHeight = headerElement ? headerElement.getBoundingClientRect().height : 0;
     const gridContentHeight = rect.height - headerHeight;
-    const cellHeight = gridContentHeight / 17; // 17 hours
+    const cellHeight = gridContentHeight / totalHours;
     
     const day = Math.floor(x / cellWidth) - 1; // -1 for time column
-    const hour = Math.floor((y - headerHeight) / cellHeight) + 5; // +5 because we start from 5 AM
+    const hour = Math.floor((y - headerHeight) / cellHeight) + gridStartHour;
     
     // Calculate sub-cell (4 per hour)
     const subCellY = (y - headerHeight) % cellHeight;
@@ -193,7 +225,7 @@ export default function Grid({
 
     // Clamp values
     const clampedDay = Math.max(0, Math.min(6, day));
-    const clampedHour = Math.max(5, Math.min(21, hour)); // Changed max from 24 to 21 (9 PM)
+    const clampedHour = Math.max(gridStartHour, Math.min(gridEndHour, hour));
     const clampedSubCell = Math.max(0, Math.min(3, subCell));
 
     setDragState(prev => prev ? {
@@ -249,7 +281,7 @@ export default function Grid({
 
     availableSlots.forEach((slot, index) => {
       // Calculate position for this preview card
-      const totalSubCellsInGrid = 17 * 4; // 17 hours * 4 sub-cells per hour
+      const totalSubCellsInGrid = totalHours * 4; // totalHours * 4 sub-cells per hour
       const startIndex = timeToSubCellIndex(slot.startHour, slot.startSubCell);
       const endIndex = timeToSubCellIndex(slot.endHour, slot.endSubCell);
       const top = (startIndex / totalSubCellsInGrid) * 100;
@@ -351,9 +383,9 @@ export default function Grid({
               .filter(event => event.startDay === dayIndex)
               .map(event => {
                 // Calculate top/height for absolute positioning using percentages
-                const totalSubCells = 17 * 4; // 17 hours * 4 sub-cells per hour
-                const startIndex = (event.startHour - 5) * 4 + event.startSubCell;
-                const endIndex = (event.endHour - 5) * 4 + event.endSubCell;
+                const totalSubCells = totalHours * 4; // totalHours * 4 sub-cells per hour
+                const startIndex = (event.startHour - gridStartHour) * 4 + event.startSubCell;
+                const endIndex = (event.endHour - gridStartHour) * 4 + event.endSubCell;
                 const top = (startIndex / totalSubCells) * 100;
                 const height = ((endIndex - startIndex + 1) / totalSubCells) * 100 + 0.1; // add a small overlap
                 return (

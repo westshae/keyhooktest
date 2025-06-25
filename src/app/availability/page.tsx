@@ -573,6 +573,7 @@ export default function Availability() {
                 onCellClick={handleCellClick} 
                 events={isEditing ? editEvents : viewEvents}
                 isEditMode={isEditing}
+                dynamicTimeRange={true}
                 onCardCreate={handleCardCreate}
                 onCardDelete={handleCardDelete}
               />
