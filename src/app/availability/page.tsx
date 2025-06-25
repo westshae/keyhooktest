@@ -294,6 +294,12 @@ export default function Availability() {
     setDeletedCardIds([]); // Clear deletion tracking
   };
 
+  const handleReturnWithoutSaving = () => {
+    // Exit edit mode without saving - revert to original view state
+    setIsEditing(false);
+    setDeletedCardIds([]); // Clear deletion tracking
+  };
+
   const handleCellClick = (day: number, hour: number, subCell: number) => {
     console.log(`Clicked: Day ${day}, Hour ${hour}, Sub-cell ${subCell} in ${isEditing ? 'edit' : 'view'} mode`);
   };
@@ -386,13 +392,22 @@ export default function Availability() {
             </h2>
             <div className="flex gap-2">
               {isEditing && (
-                <button
-                  onClick={handleRefresh}
-                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                  disabled={isSaving}
-                >
-                  Refresh
-                </button>
+                <>
+                  <button
+                    onClick={handleRefresh}
+                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                    disabled={isSaving}
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    onClick={handleReturnWithoutSaving}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    disabled={isSaving}
+                  >
+                    Return without saving
+                  </button>
+                </>
               )}
               <button
                 onClick={toggleEdit}
