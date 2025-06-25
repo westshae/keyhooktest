@@ -88,3 +88,23 @@ I also plan to include a section of the header for settings, such as 'reset all 
 6. Implemented Zod, which I've previously used for clean validation.
 7. Just finished the tenant endpoints for booking, will implement availability/free, then pm bookings
 8. Next step after this is a basic refactor, then beginning to implement the frontend.
+
+# Breakdown of changes in regards to the frontend after re-reviewing the requirements and current plans
+1. It's unlikely the tenant would want to use the platform itself to manage their viewings.
+2. Due to this, the tenant overview page is being scrapped. This includes the tenant 'get' endpoint.
+3. In production, an email/sms would be sent instead.
+4. In addition to these changes, the pages have removed their tenant/pm url parent.
+
+# Breakdown of pages
+1. It's clear the grid needs to be a component.
+  - The baseline component is the grid itself, that can hold cards.
+  - There are 3 overall grid types
+    1. Editing availability (dragging on grid to create cards, and clickable cards to delete.)
+    2. Showing availability for PMs (Just showing cards)
+    3. Showing tenants booking times (Showing cards, plus on click 'confirming' )
+  - There are 3 different types of cards.
+    1. Availability Creation: PMs create this, then can delete it
+    2. Availability Viewing: Above, without interactability
+    2. Booking Selection: Tenants select it.
+  - Only one modal, a 'text + confirm button'
+2. The PM grid has two versions, surrounding in one component with a 'edit/overview' toggle, which also saves it.
