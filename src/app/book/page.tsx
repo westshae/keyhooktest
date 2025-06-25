@@ -1,12 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Grid from '@/components/custom/Grid';
 
 interface Tenant {
   id: number;
   name: string;
   email: string;
   phone: string;
+}
+
+interface Availability {
+  id: number;
+  date: string;
+  start_time: string;
+  time_in_minutes: number;
+}
+
+interface Card {
+  id: string;
+  title: string;
+  startDay: number;
+  startHour: number;
+  startSubCell: number;
+  endDay: number;
+  endHour: number;
+  endSubCell: number;
+  color?: string;
+  availabilityId: number; // Add this to track the backend availability ID
 }
 
 const tenantData: Tenant[] = [
@@ -30,17 +51,160 @@ const tenantData: Tenant[] = [
   }
 ];
 
+// Helper function to convert backend availability to frontend card format
+const availabilityToCardFormat = (availability: Availability): Card => {
+  // Parse the date to get day of week
+  const [day, month, year] = availability.date.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const startDay = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Parse the start time
+  const [hours, minutes] = availability.start_time.split(':').map(Number);
+  const startHour = hours;
+  const startSubCell = Math.floor(minutes / 15);
+  
+  // Calculate end time
+  const totalStartMinutes = hours * 60 + minutes;
+  const totalEndMinutes = totalStartMinutes + availability.time_in_minutes;
+  const endHour = Math.floor(totalEndMinutes / 60);
+  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
+  
+  // Create title from time range
+  const formatTime = (hour: number, subCell: number) => {
+    const minutes = subCell * 15;
+    if (hour === 0) return `12:${minutes.toString().padStart(2, '0')} AM`;
+    if (hour === 12) return `12:${minutes.toString().padStart(2, '0')} PM`;
+    if (hour > 12) return `${hour - 12}:${minutes.toString().padStart(2, '0')} PM`;
+    return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
+  };
+  
+  const title = `${formatTime(startHour, startSubCell)} - ${formatTime(endHour, endSubCell)}`;
+  
+  return {
+    id: `availability-${availability.id}`,
+    title,
+    startDay,
+    startHour,
+    startSubCell,
+    endDay: startDay, // Same day for now
+    endHour,
+    endSubCell,
+    color: 'bg-green-500', // Green for available slots
+    availabilityId: availability.id,
+  };
+};
+
 export default function Book() {
   const [selectedTenant, setSelectedTenant] = useState<Tenant>(tenantData[0]);
+  const [availableSlots, setAvailableSlots] = useState<Card[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [isBooking, setIsBooking] = useState(false);
+
+  // Load available slots from backend
+  useEffect(() => {
+    loadAvailableSlots();
+  }, []);
+
+  const loadAvailableSlots = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch('/api/bookings/tenant');
+      if (!response.ok) {
+        throw new Error('Failed to load available slots');
+      }
+      const result = await response.json();
+      const cards = result.data.map(availabilityToCardFormat);
+      setAvailableSlots(cards);
+    } catch (error) {
+      console.error('Error loading available slots:', error);
+      setError('Failed to load available time slots');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCardClick = (card: {
+    id: string;
+    title: string;
+    startDay: number;
+    startHour: number;
+    startSubCell: number;
+    endDay: number;
+    endHour: number;
+    endSubCell: number;
+    color?: string;
+    availabilityId?: number;
+  }) => {
+    // Find the corresponding card from availableSlots to get the full Card object
+    const fullCard = availableSlots.find(slot => slot.id === card.id);
+    if (fullCard) {
+      setSelectedCard(fullCard);
+      setShowConfirmation(true);
+    }
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!selectedCard) return;
+
+    try {
+      setIsBooking(true);
+      setError(null);
+
+      const response = await fetch('/api/bookings/tenant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tenant_id: selectedTenant.id,
+          tenant_name: selectedTenant.name,
+          availability_id: selectedCard.availabilityId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create booking');
+      }
+
+      // Remove the booked slot from the available slots
+      setAvailableSlots(prev => prev.filter(card => card.id !== selectedCard.id));
+      
+      // Close confirmation dialog
+      setShowConfirmation(false);
+      setSelectedCard(null);
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      setError('Failed to create booking. Please try again.');
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  const handleCancelBooking = () => {
+    setShowConfirmation(false);
+    setSelectedCard(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg">Loading available time slots...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen flex flex-col">
       {/* Page-width header */}
-      <header className="w-full bg-white shadow-sm border-b">
+      <header className="flex-shrink-0 w-full bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Tenant Management</h1>
+              <h1 className="text-xl font-semibold text-gray-900">Book Viewing</h1>
             </div>
             <div className="flex items-center">
               <label htmlFor="tenant-select" className="sr-only">
@@ -67,17 +231,69 @@ export default function Book() {
       </header>
 
       {/* Content div below header */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tenant Details</h2>
-          
-          <div className="p-8 text-center">
-            <p className="text-lg text-gray-600 mb-4">Selected Tenant:</p>
-            <p className="text-3xl font-bold text-blue-600">{selectedTenant.name}</p>
-            <p className="text-sm text-gray-500 mt-2">This content will be replaced later</p>
+      <main className="flex-1 p-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full">
+          <div className="bg-white shadow rounded-lg p-6 h-full flex flex-col">
+            <div className="mb-6 flex-shrink-0">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Available Time Slots</h2>
+              <p className="text-gray-600">Click on any green time slot to book a viewing for {selectedTenant.name}</p>
+              {error && (
+                <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {error}
+                </div>
+              )}
+            </div>
+            
+            {/* Grid Container - same size as availability page */}
+            <div className="flex-1 overflow-x-auto border-2 border-green-200 rounded-lg">
+              <Grid 
+                onCellClick={() => {}} // No cell click functionality needed
+                events={availableSlots}
+                isEditMode={false}
+                onCardClick={handleCardClick}
+              />
+            </div>
           </div>
         </div>
       </main>
+
+      {/* Confirmation Dialog */}
+      {showConfirmation && selectedCard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Booking
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to book this time slot for a viewing?
+            </p>
+            <div className="bg-gray-50 p-3 rounded mb-6">
+              <p className="text-sm text-gray-700">
+                <strong>Time:</strong> {selectedCard.title}
+              </p>
+              <p className="text-sm text-gray-700">
+                <strong>Tenant:</strong> {selectedTenant.name}
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelBooking}
+                disabled={isBooking}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBooking}
+                disabled={isBooking}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isBooking ? 'Booking...' : 'Confirm Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

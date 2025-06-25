@@ -1,12 +1,29 @@
 import { db } from '@/db';
-import { bookingTable } from '@/db/schema';
+import { bookingTable, availabilityTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import type { Booking } from '@/db/types';
+import type { Booking, Availability } from '@/db/types';
 
-export async function getAllBookings(): Promise<Booking[]> {
+// Extended type for bookings with availability data
+export interface BookingWithAvailability extends Booking {
+  availability: Availability;
+}
+
+export async function getAllBookings(): Promise<BookingWithAvailability[]> {
   const bookings = await db
-    .select()
-    .from(bookingTable);
+    .select({
+      id: bookingTable.id,
+      tenant_id: bookingTable.tenant_id,
+      tenant_name: bookingTable.tenant_name,
+      availability_id: bookingTable.availability_id,
+      availability: {
+        id: availabilityTable.id,
+        date: availabilityTable.date,
+        start_time: availabilityTable.start_time,
+        time_in_minutes: availabilityTable.time_in_minutes,
+      }
+    })
+    .from(bookingTable)
+    .innerJoin(availabilityTable, eq(bookingTable.availability_id, availabilityTable.id));
   
   return bookings;
 }

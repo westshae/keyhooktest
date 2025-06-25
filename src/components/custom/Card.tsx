@@ -10,6 +10,7 @@ interface CardProps {
   endSubCell: number;
   color?: string;
   onDelete?: () => void;
+  onClick?: () => void;
   style?: React.CSSProperties;
 }
 
@@ -17,17 +18,22 @@ export default function Card({
   title, 
   color = 'bg-blue-500',
   onDelete,
+  onClick,
   style
 }: CardProps) {
   return (
     <div 
-      className={`${color} text-white rounded-sm text-xs font-medium shadow-sm absolute group flex items-center justify-start border border-white`}
+      className={`${color} text-white rounded-sm text-xs font-medium shadow-sm absolute group flex items-center justify-start border border-white ${onClick ? 'cursor-pointer hover:opacity-80' : ''}`}
       style={style}
+      onClick={onClick}
     >
       <div className="truncate text-xs flex-1 pl-2 py-0.5">{title}</div>
       {onDelete && (
         <button
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering the card's onClick
+            onDelete();
+          }}
           className="bg-red-500 text-white min-w-[1.5rem] h-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-r-sm rounded-l-none text-xs font-bold p-0 m-0 border-0"
         >
           ×

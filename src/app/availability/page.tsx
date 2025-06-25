@@ -22,6 +22,14 @@ interface BackendAvailability {
   time_in_minutes: number;
 }
 
+interface BookingWithAvailability {
+  id: number;
+  tenant_id: number;
+  tenant_name: string;
+  availability_id: number;
+  availability: BackendAvailability;
+}
+
 // Helper function to convert frontend card format to backend format
 const cardToBackendFormat = (card: Card): BackendAvailability[] => {
   const availabilities: BackendAvailability[] = [];
@@ -106,6 +114,50 @@ const backendToCardFormat = (availability: BackendAvailability): Card => {
   };
 };
 
+// Helper function to convert booking to frontend card format
+const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
+  const availability = booking.availability;
+  
+  // Parse the date to get day of week
+  const [day, month, year] = availability.date.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const startDay = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Parse the start time
+  const [hours, minutes] = availability.start_time.split(':').map(Number);
+  const startHour = hours;
+  const startSubCell = Math.floor(minutes / 15);
+  
+  // Calculate end time
+  const totalStartMinutes = hours * 60 + minutes;
+  const totalEndMinutes = totalStartMinutes + availability.time_in_minutes;
+  const endHour = Math.floor(totalEndMinutes / 60);
+  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
+  
+  // Create title from time range
+  const formatTime = (hour: number, subCell: number) => {
+    const minutes = subCell * 15;
+    if (hour === 0) return `12:${minutes.toString().padStart(2, '0')} AM`;
+    if (hour === 12) return `12:${minutes.toString().padStart(2, '0')} PM`;
+    if (hour > 12) return `${hour - 12}:${minutes.toString().padStart(2, '0')} PM`;
+    return `${hour}:${minutes.toString().padStart(2, '0')} PM`;
+  };
+  
+  const title = `${formatTime(startHour, startSubCell)} - ${formatTime(endHour, endSubCell)} (${booking.tenant_name})`;
+  
+  return {
+    id: `booking-${booking.id}`,
+    title,
+    startDay,
+    startHour,
+    startSubCell,
+    endDay: startDay, // Same day for now
+    endHour,
+    endSubCell,
+    color: 'bg-purple-500', // Purple for bookings
+  };
+};
+
 export default function Availability() {
   const [isEditing, setIsEditing] = useState(false);
   const [viewEvents, setViewEvents] = useState<Card[]>([]);
@@ -124,13 +176,33 @@ export default function Availability() {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch('/api/availability');
-      if (!response.ok) {
+      
+      // Load availability slots
+      const availabilityResponse = await fetch('/api/availability');
+      if (!availabilityResponse.ok) {
         throw new Error('Failed to load availability');
       }
-      const result = await response.json();
-      const cards = result.data.map(backendToCardFormat);
-      setViewEvents(cards);
+      const availabilityResult = await availabilityResponse.json();
+      const availabilityCards = availabilityResult.data.map(backendToCardFormat);
+      
+      // Load bookings
+      const bookingsResponse = await fetch('/api/bookings/pm');
+      if (!bookingsResponse.ok) {
+        throw new Error('Failed to load bookings');
+      }
+      const bookingsResult = await bookingsResponse.json();
+      const bookingCards = bookingsResult.data.map(bookingToCardFormat);
+      
+      // Filter out availability slots that are booked
+      const bookedAvailabilityIds = new Set(bookingsResult.data.map((booking: BookingWithAvailability) => booking.availability_id));
+      const availableCards = availabilityCards.filter((card: Card) => {
+        const cardId = parseInt(card.id.replace('card-', ''));
+        return !bookedAvailabilityIds.has(cardId);
+      });
+      
+      // Combine available slots and bookings
+      const allCards = [...availableCards, ...bookingCards];
+      setViewEvents(allCards);
     } catch (error) {
       console.error('Error loading availability:', error);
       setError('Failed to load availability data');
@@ -143,6 +215,9 @@ export default function Availability() {
     try {
       setIsSaving(true);
       setError(null);
+      
+      // Filter out booking cards - only process availability cards
+      const availabilityCards = cards.filter(card => card.id.startsWith('card-'));
       
       // Delete the specific cards that were marked for deletion
       if (deletedCardIds.length > 0) {
@@ -169,8 +244,8 @@ export default function Availability() {
         }
       }
       
-      // Convert all cards to backend format and save
-      const backendData = cards.flatMap(cardToBackendFormat);
+      // Convert all availability cards to backend format and save
+      const backendData = availabilityCards.flatMap(cardToBackendFormat);
       
       if (backendData.length > 0) {
         const response = await fetch('/api/availability', {
@@ -186,9 +261,8 @@ export default function Availability() {
         }
       }
       
-      // Update both view and edit states with the saved data
-      setViewEvents(cards);
-      setEditEvents(cards);
+      // Reload the data to get the updated view with bookings
+      await loadAvailability();
       // Clear the deleted card IDs since they've been processed
       setDeletedCardIds([]);
     } catch (error) {
@@ -205,16 +279,18 @@ export default function Availability() {
       await saveAvailability(editEvents);
       setIsEditing(false);
     } else {
-      // Enter edit mode: Copy current overview to edit state
-      setEditEvents([...viewEvents]);
+      // Enter edit mode: Copy only availability cards to edit state (exclude booking cards)
+      const availabilityCards = viewEvents.filter(card => card.id.startsWith('card-'));
+      setEditEvents(availabilityCards);
       setDeletedCardIds([]); // Clear any previous deletion tracking
       setIsEditing(true);
     }
   };
 
   const handleRefresh = () => {
-    // Refresh: Reset edit state to match current view data
-    setEditEvents([...viewEvents]);
+    // Refresh: Reset edit state to match current availability data (exclude booking cards)
+    const availabilityCards = viewEvents.filter(card => card.id.startsWith('card-'));
+    setEditEvents(availabilityCards);
     setDeletedCardIds([]); // Clear deletion tracking
   };
 
@@ -252,12 +328,16 @@ export default function Availability() {
   const hasUnsavedChanges = () => {
     if (!isEditing) return false;
     
-    // Check if the number of cards changed
-    if (viewEvents.length !== editEvents.length) return true;
+    // Filter to only availability cards for comparison
+    const viewAvailabilityCards = viewEvents.filter(card => card.id.startsWith('card-'));
+    const editAvailabilityCards = editEvents.filter(card => card.id.startsWith('card-'));
+    
+    // Check if the number of availability cards changed
+    if (viewAvailabilityCards.length !== editAvailabilityCards.length) return true;
     
     // Create maps for easier comparison by ID
-    const viewCardsMap = new Map(viewEvents.map(card => [card.id, card]));
-    const editCardsMap = new Map(editEvents.map(card => [card.id, card]));
+    const viewCardsMap = new Map(viewAvailabilityCards.map(card => [card.id, card]));
+    const editCardsMap = new Map(editAvailabilityCards.map(card => [card.id, card]));
     
     // Check if any cards were added or removed
     for (const [id, viewCard] of viewCardsMap) {

@@ -16,6 +16,7 @@ interface GridProps {
     endHour: number;
     endSubCell: number;
     color?: string;
+    availabilityId?: number;
   }>;
   isEditMode?: boolean;
   onCardCreate?: (card: {
@@ -29,6 +30,18 @@ interface GridProps {
     color?: string;
   }) => void;
   onCardDelete?: (cardId: string) => void;
+  onCardClick?: (card: {
+    id: string;
+    title: string;
+    startDay: number;
+    startHour: number;
+    startSubCell: number;
+    endDay: number;
+    endHour: number;
+    endSubCell: number;
+    color?: string;
+    availabilityId?: number;
+  }) => void;
 }
 
 export default function Grid({ 
@@ -36,7 +49,8 @@ export default function Grid({
   events = [], 
   isEditMode = false,
   onCardCreate,
-  onCardDelete 
+  onCardDelete,
+  onCardClick
 }: GridProps) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const hours = Array.from({ length: 17 }, (_, i) => i + 5); // Start from 5 AM, 17 hours total (5 AM to 9 PM)
@@ -354,6 +368,7 @@ export default function Grid({
                     endSubCell={event.endSubCell}
                     color={event.color}
                     onDelete={onCardDelete ? () => onCardDelete(event.id) : undefined}
+                    onClick={onCardClick ? () => onCardClick(event) : undefined}
                     style={{
                       left: 0,
                       right: 0,
