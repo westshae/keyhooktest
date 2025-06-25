@@ -74,12 +74,6 @@ const availabilityToCardFormat = (availability: Availability): Card => {
   const startHour = hours;
   const startSubCell = Math.floor(minutes / 15);
   
-  // Calculate end time
-  const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + availability.time_in_minutes;
-  const endHour = Math.floor(totalEndMinutes / 60);
-  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
-  
   // Create title from time range
   const formatTime = (hour: number, subCell: number) => {
     const minutes = subCell * 15;
@@ -89,7 +83,14 @@ const availabilityToCardFormat = (availability: Availability): Card => {
     return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
   };
   
-  const title = `${formatTime(startHour, startSubCell)} - ${formatTime(endHour, endSubCell)}`;
+  // Calculate the end time to match how findAvailableSlots creates slots (next sub-cell)
+  // Since all slots are 30 minutes (2 sub-cells), we add 1 to the sub-cell
+  const startTime = formatTime(startHour, startSubCell);
+  const endSubCell = (startSubCell + 1) % 4;
+  const endHour = startSubCell === 3 ? startHour + 1 : startHour; // If we wrap to next hour
+  const endTime = formatTime(endHour, endSubCell);
+  
+  const title = `${startTime} - ${endTime}`;
   
   return {
     id: `availability-${availability.id}`,
