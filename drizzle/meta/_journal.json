@@ -15,6 +15,13 @@
       "when": 1750822962471,
       "tag": "0001_many_invisible_woman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1750826966553,
+      "tag": "0002_hesitant_ricochet",
+      "breakpoints": true
     }
   ]
 }

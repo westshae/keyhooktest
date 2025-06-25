@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
-        { error: 'Invalid request body. Please provide tenant_id, tenant_name, and slot_id' },
+        { error: 'Invalid request body. Please provide tenant_id, tenant_name, and availability_id' },
         { status: 400 }
       );
     }

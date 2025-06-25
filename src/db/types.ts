@@ -2,7 +2,7 @@ import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { availabilityTable, bookingTable } from "./schema";
 import { z } from "zod";
 
-// Slot types
+// Availability types
 export type Availability = InferSelectModel<typeof availabilityTable>;
 export type NewAvailability = InferInsertModel<typeof availabilityTable>;
 
@@ -14,7 +14,7 @@ export type NewBooking = InferInsertModel<typeof bookingTable>;
 export const newAvailabilitySchema = z.object({
   date: z.string().describe("DD-MM-YYYY"),
   start_time: z.string().describe("HH:MM"),
-  slot_time_in_minutes: z.number().describe("30, 60, 90, 120 etc"),
+  time_in_minutes: z.number().describe("30, 60, 90, 120 etc"),
 });
 
 export const bulkAvailabilitySchema = z.array(newAvailabilitySchema);
@@ -55,7 +55,7 @@ export type GetTenantBookingsParams = z.infer<typeof getTenantBookingsSchema>;
 export const createTenantBookingSchema = z.object({
   tenant_id: z.number().positive().describe("Tenant ID must be a positive integer"),
   tenant_name: z.string().min(1).describe("Tenant name is required"),
-  slot_id: z.number().positive().describe("Slot ID must be a positive integer"),
+  availability_id: z.number().positive().describe("Availability ID must be a positive integer"),
 });
 
 export type CreateTenantBookingParams = z.infer<typeof createTenantBookingSchema>;

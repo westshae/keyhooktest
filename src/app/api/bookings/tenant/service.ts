@@ -18,7 +18,7 @@ export async function createTenantBooking(params: CreateTenantBookingParams): Pr
     .values({
       tenant_id: params.tenant_id,
       tenant_name: params.tenant_name,
-      slot_id: params.slot_id,
+      availability_id: params.availability_id,
     })
     .returning();
   

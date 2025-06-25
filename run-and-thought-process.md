@@ -43,16 +43,16 @@ Make a Proof of Concept for 'property managers to specify viewing availability, 
 ?. Note, on the tenant pages, there is a dropdown that allows you to select from one of three 'constant tenants' to simulate multiple tenants.
 
 # Data Structures
-1. Slots
+1. Availability
   - id number
   - Date (DD-MM-YYYY)
   - Start time (HH:MM)
-  - SlotTimeInMinutes number
+  - TimeInMinutes number
 2. Booking
   - id number
   - Tenant ID number
   - Tenant Name (Removed when auth/account management is added for prod).
-  - slot id number
+  - availability_id number
   - !!! (Not included here, but in prod, PM id would need to be included)
 
 # General comments before programming begun
