@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Grid from '@/components/custom/Grid';
+import WeekChooser from '@/components/custom/WeekChooser';
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,7 @@ interface BookingWithAvailability {
 }
 
 // Helper function to convert frontend card format to backend format
-const cardToBackendFormat = (card: Card): BackendAvailability[] => {
+const cardToBackendFormat = (card: Card, selectedDate: Date): BackendAvailability[] => {
   const availabilities: BackendAvailability[] = [];
   
   // Convert the card's time range to backend format
@@ -53,12 +54,17 @@ const cardToBackendFormat = (card: Card): BackendAvailability[] => {
   const endMinutes = card.endHour * 60 + card.endSubCell * 15;
   const durationMinutes = Math.max(0, endMinutes - startMinutes);
   
-  // Convert day index to date (assuming current week)
-  const today = new Date();
-  const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const daysToAdd = (card.startDay - currentDayOfWeek + 7) % 7;
-  const targetDate = new Date(today);
-  targetDate.setDate(today.getDate() + daysToAdd);
+  // Convert day index to date based on selected week
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day; // Adjust to Sunday
+    return new Date(d.setDate(diff));
+  };
+  
+  const weekStart = getWeekStart(selectedDate);
+  const targetDate = new Date(weekStart);
+  targetDate.setDate(weekStart.getDate() + card.startDay);
   
   // Format date as DD-MM-YYYY
   const day = targetDate.getDate().toString().padStart(2, '0');
@@ -87,11 +93,31 @@ const cardToBackendFormat = (card: Card): BackendAvailability[] => {
 };
 
 // Helper function to convert backend format to frontend card format
-const backendToCardFormat = (availability: BackendAvailability): Card => {
+const backendToCardFormat = (availability: BackendAvailability, selectedDate: Date): Card | null => {
   // Parse the date to get day of week
   const [day, month, year] = availability.date.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  const startDay = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const availabilityDate = new Date(year, month - 1, day);
+  
+  // Get the start of the selected week
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day; // Adjust to Sunday
+    return new Date(d.setDate(diff));
+  };
+  
+  const weekStart = getWeekStart(selectedDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  
+  // Check if the availability date is within the selected week
+  if (availabilityDate < weekStart || availabilityDate > weekEnd) {
+    // If not in the selected week, return null
+    return null;
+  }
+  
+  // Calculate the day index within the week (0 = Sunday, 1 = Monday, etc.)
+  const startDay = availabilityDate.getDay();
   
   // Parse the start time
   const [hours, minutes] = availability.start_time.split(':').map(Number);
@@ -129,13 +155,33 @@ const backendToCardFormat = (availability: BackendAvailability): Card => {
 };
 
 // Helper function to convert booking to frontend card format
-const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
+const bookingToCardFormat = (booking: BookingWithAvailability, selectedDate: Date): Card | null => {
   const availability = booking.availability;
   
   // Parse the date to get day of week
   const [day, month, year] = availability.date.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  const startDay = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const availabilityDate = new Date(year, month - 1, day);
+  
+  // Get the start of the selected week
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day; // Adjust to Sunday
+    return new Date(d.setDate(diff));
+  };
+  
+  const weekStart = getWeekStart(selectedDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  
+  // Check if the availability date is within the selected week
+  if (availabilityDate < weekStart || availabilityDate > weekEnd) {
+    // If not in the selected week, return null
+    return null;
+  }
+  
+  // Calculate the day index within the week (0 = Sunday, 1 = Monday, etc.)
+  const startDay = availabilityDate.getDay();
   
   // Parse the start time
   const [hours, minutes] = availability.start_time.split(':').map(Number);
@@ -187,11 +233,12 @@ export default function Availability() {
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [showTenantInfoModal, setShowTenantInfoModal] = useState(false);
   const [selectedBookingCard, setSelectedBookingCard] = useState<Card | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Load data from backend on component mount
+  // Load data from backend on component mount and when selectedDate changes
   useEffect(() => {
     loadAvailability();
-  }, []);
+  }, [selectedDate]);
 
   const loadAvailability = async () => {
     try {
@@ -204,7 +251,9 @@ export default function Availability() {
         throw new Error('Failed to load availability');
       }
       const availabilityResult = await availabilityResponse.json();
-      const availabilityCards = availabilityResult.data.map(backendToCardFormat);
+      const availabilityCards = availabilityResult.data
+        .map((availability: BackendAvailability) => backendToCardFormat(availability, selectedDate))
+        .filter((card: Card | null) => card !== null);
       
       // Load bookings
       const bookingsResponse = await fetch('/api/bookings/pm');
@@ -212,7 +261,9 @@ export default function Availability() {
         throw new Error('Failed to load bookings');
       }
       const bookingsResult = await bookingsResponse.json();
-      const bookingCards = bookingsResult.data.map(bookingToCardFormat);
+      const bookingCards = bookingsResult.data
+        .map((booking: BookingWithAvailability) => bookingToCardFormat(booking, selectedDate))
+        .filter((card: Card | null) => card !== null);
       
       // Filter out availability slots that are booked
       const bookedAvailabilityIds = new Set(bookingsResult.data.map((booking: BookingWithAvailability) => booking.availability_id));
@@ -294,7 +345,7 @@ export default function Availability() {
       }
       
       // Convert all availability cards to backend format and save
-      const backendData = availabilityCards.flatMap(cardToBackendFormat);
+      const backendData = availabilityCards.flatMap(card => cardToBackendFormat(card, selectedDate));
       
       if (backendData.length > 0) {
         const response = await fetch('/api/availability', {
@@ -634,6 +685,16 @@ export default function Availability() {
       {/* Main Content */}
       <main className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
+          {/* Week Chooser */}
+          <div className="mb-6">
+            <WeekChooser 
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              disabled={isEditing && hasUnsavedChanges()}
+              disabledTooltip="Please save your changes before changing weeks"
+            />
+          </div>
+
           {/* Mode Indicator */}
           <div className="mb-6">
             <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
@@ -663,6 +724,7 @@ export default function Availability() {
                 events={isEditing ? editEvents : viewEvents}
                 isEditMode={isEditing}
                 dynamicTimeRange={false}
+                selectedDate={selectedDate}
                 onCardCreate={handleCardCreate}
                 onCardDelete={isEditing ? handleCardDelete : undefined}
                 onCardClick={handleCardClick}

@@ -20,6 +20,7 @@ interface GridProps {
   }>;
   isEditMode?: boolean;
   dynamicTimeRange?: boolean;
+  selectedDate?: Date;
   onCardCreate?: (card: {
     title: string;
     startDay: number;
@@ -50,11 +51,30 @@ export default function Grid({
   events = [], 
   isEditMode = false,
   dynamicTimeRange = false,
+  selectedDate = new Date(),
   onCardCreate,
   onCardDelete,
   onCardClick
 }: GridProps) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  // Get the dates for the current week
+  const getWeekDates = (date: Date): Date[] => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day; // Adjust to Sunday
+    const weekStart = new Date(d.setDate(diff));
+    
+    const weekDates: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + i);
+      weekDates.push(dayDate);
+    }
+    return weekDates;
+  };
+
+  const weekDates = getWeekDates(selectedDate);
   
   // Calculate dynamic time range based on events
   const calculateTimeRange = () => {
@@ -309,6 +329,23 @@ export default function Grid({
     return previewCards;
   };
 
+  // Format date for header display
+  const formatHeaderDate = (date: Date) => {
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    
+    return (
+      <div className="text-center">
+        <div className={`font-semibold ${isToday ? 'text-primary' : 'text-foreground'}`}>
+          {days[date.getDay()]}
+        </div>
+        <div className={`text-xs ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+          {date.getDate()}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div 
       ref={gridRef}
@@ -320,12 +357,12 @@ export default function Grid({
       {/* Day Headers */}
       <div className="grid grid-cols-8 bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10 border-b border-border/50 flex-shrink-0">
         <div className="p-3 border-r border-border/50 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800"></div>
-        {days.map((day) => (
+        {weekDates.map((date, index) => (
           <div
-            key={day}
-            className="p-3 text-center font-semibold text-foreground border-r border-border/50 last:border-r-0"
+            key={index}
+            className="p-3 border-r border-border/50 last:border-r-0"
           >
-            {day}
+            {formatHeaderDate(date)}
           </div>
         ))}
       </div>
@@ -345,7 +382,7 @@ export default function Grid({
         </div>
 
         {/* Grid Cells */}
-        {days.map((_, dayIndex) => (
+        {weekDates.map((date, dayIndex) => (
           <div key={dayIndex} className="border-r border-border/50 last:border-r-0 relative flex flex-col">
             {hours.map((hour) => (
               <div key={hour} className="flex-1 border-b border-border/30 min-h-0">

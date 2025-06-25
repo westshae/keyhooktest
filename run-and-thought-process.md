@@ -109,3 +109,9 @@ I also plan to include a section of the header for settings, such as 'reset all 
     2. Booking Selection: Tenants select it.
   - Only one modal, a 'text + confirm button'
 2. The PM grid has two versions, surrounding in one component with a 'edit/overview' toggle, which also saves it.
+
+# Closing notes on the project
+1. The ability to determine each week's availability manually instead of assumed is important, so I've decided to avoid the automatic repetition which isn't intuitive
+2. I've included a landing page to briefly explain the project and how to use it.
+3. I ended up not making a specific modal component, however this would be useful for a non-proof of concept.
+4. The current system where the grid is one component has gotten a bit messy. Moving into a non-proof of concept, I'd like to implement a large refactor of this component. For a proof of concept, using the same component allowed for quick prototyping

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Grid from '@/components/custom/Grid';
+import WeekChooser from '@/components/custom/WeekChooser';
 import {
   Dialog,
   DialogContent,
@@ -63,11 +64,31 @@ const tenantData: Tenant[] = [
 ];
 
 // Helper function to convert backend availability to frontend card format
-const availabilityToCardFormat = (availability: Availability): Card => {
+const availabilityToCardFormat = (availability: Availability, selectedDate: Date): Card | null => {
   // Parse the date to get day of week
   const [day, month, year] = availability.date.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  const startDay = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const availabilityDate = new Date(year, month - 1, day);
+  
+  // Get the start of the selected week
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day; // Adjust to Sunday
+    return new Date(d.setDate(diff));
+  };
+  
+  const weekStart = getWeekStart(selectedDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  
+  // Check if the availability date is within the selected week
+  if (availabilityDate < weekStart || availabilityDate > weekEnd) {
+    // If not in the selected week, return null
+    return null;
+  }
+  
+  // Calculate the day index within the week (0 = Sunday, 1 = Monday, etc.)
+  const startDay = availabilityDate.getDay();
   
   // Parse the start time
   const [hours, minutes] = availability.start_time.split(':').map(Number);
@@ -144,11 +165,12 @@ export default function Book() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isBooking, setIsBooking] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Load available slots from backend
+  // Load available slots from backend on component mount and when selectedDate changes
   useEffect(() => {
     loadAvailableSlots();
-  }, []);
+  }, [selectedDate]);
 
   const loadAvailableSlots = async () => {
     try {
@@ -159,7 +181,9 @@ export default function Book() {
         throw new Error('Failed to load available slots');
       }
       const result = await response.json();
-      const cards = result.data.map(availabilityToCardFormat);
+      const cards = result.data
+        .map((availability: Availability) => availabilityToCardFormat(availability, selectedDate))
+        .filter((card: Card | null) => card !== null);
       setAvailableSlots(cards);
     } catch (error) {
       console.error('Error loading available slots:', error);
@@ -309,6 +333,16 @@ export default function Book() {
       {/* Main Content */}
       <main className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
+          {/* Week Chooser */}
+          <div className="mb-6">
+            <WeekChooser 
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              disabled={isBooking}
+              disabledTooltip="Please complete your booking before changing weeks"
+            />
+          </div>
+
           {/* Instructions */}
           <div className="mb-6">
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
@@ -335,6 +369,7 @@ export default function Book() {
                 events={availableSlots}
                 isEditMode={false}
                 dynamicTimeRange={true} // Enable dynamic time range based on available slots
+                selectedDate={selectedDate}
                 onCardClick={handleCardClick}
               />
             </div>
