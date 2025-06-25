@@ -1,142 +1,83 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-interface Contact {
+interface Tenant {
   id: number;
   name: string;
+  email: string;
   phone: string;
-  email?: string;
-  address: string;
-  createdAt: string;
 }
 
-export default function TestDB() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-  });
-  const [loading, setLoading] = useState(false);
+const tenantData: Tenant[] = [
+  {
+    id: 1,
+    name: 'Tenant 1',
+    email: 'tenant1@example.com',
+    phone: '+1 (555) 123-4567'
+  },
+  {
+    id: 2,
+    name: 'Tenant 2',
+    email: 'tenant2@example.com',
+    phone: '+1 (555) 234-5678'
+  },
+  {
+    id: 3,
+    name: 'Tenant 3',
+    email: 'tenant3@example.com',
+    phone: '+1 (555) 345-6789'
+  }
+];
 
-  const fetchContacts = async () => {
-    try {
-      const response = await fetch('/api/contacts');
-      const data = await response.json();
-      setContacts(data.contacts || []);
-    } catch (error) {
-      console.error('Error fetching contacts:', error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const response = await fetch('/api/contacts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setFormData({ name: '', phone: '', email: '', address: '' });
-        fetchContacts();
-      } else {
-        const error = await response.json();
-        alert(error.error);
-      }
-    } catch (error) {
-      console.error('Error creating contact:', error);
-      alert('Failed to create contact');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchContacts();
-  }, []);
+export default function Book() {
+  const [selectedTenant, setSelectedTenant] = useState<Tenant>(tenantData[0]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Database Test</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Add Contact</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full p-2 border rounded"
-                required
-              />
+    <div className="min-h-screen bg-gray-50">
+      {/* Page-width header */}
+      <header className="w-full bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-gray-900">Tenant Management</h1>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Phone *</label>
-              <input
-                type="text"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full p-2 border rounded"
-                required
-              />
+            <div className="flex items-center">
+              <label htmlFor="tenant-select" className="sr-only">
+                Select Tenant
+              </label>
+              <select
+                id="tenant-select"
+                value={selectedTenant.id}
+                onChange={(e) => {
+                  const tenant = tenantData.find(t => t.id === parseInt(e.target.value));
+                  if (tenant) setSelectedTenant(tenant);
+                }}
+                className="block w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                {tenantData.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Address *</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50"
-            >
-              {loading ? 'Adding...' : 'Add Contact'}
-            </button>
-          </form>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Contacts ({contacts.length})</h2>
-          <div className="space-y-2">
-            {contacts.map((contact) => (
-              <div key={contact.id} className="p-3 border rounded">
-                <div className="font-medium">{contact.name}</div>
-                <div className="text-sm text-gray-600">{contact.phone}</div>
-                {contact.email && <div className="text-sm text-gray-600">{contact.email}</div>}
-                <div className="text-sm text-gray-600">{contact.address}</div>
-              </div>
-            ))}
-            {contacts.length === 0 && (
-              <div className="text-gray-500 text-center py-4">No contacts yet</div>
-            )}
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* Content div below header */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tenant Details</h2>
+          
+          <div className="p-8 text-center">
+            <p className="text-lg text-gray-600 mb-4">Selected Tenant:</p>
+            <p className="text-3xl font-bold text-blue-600">{selectedTenant.name}</p>
+            <p className="text-sm text-gray-500 mt-2">This content will be replaced later</p>
+          </div>
+        </div>
+      </main>
     </div>
   );
 } 
