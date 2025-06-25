@@ -1,10 +1,11 @@
 'use client';
 
 interface GridProps {
-  onCellClick?: (day: number, hour: number) => void;
+  onCellClick?: (day: number, hour: number, subCell: number) => void;
   events?: Array<{
     day: number;
     hour: number;
+    subCell: number;
     duration: number;
     title: string;
     color?: string;
@@ -22,13 +23,13 @@ export default function Grid({ onCellClick, events = [] }: GridProps) {
     return `${hour} AM`;
   };
 
-  const getEventForCell = (day: number, hour: number) => {
-    return events.find(event => event.day === day && event.hour === hour);
+  const getEventForSubCell = (day: number, hour: number, subCell: number) => {
+    return events.find(event => event.day === day && event.hour === hour && event.subCell === subCell);
   };
 
-  const handleCellClick = (day: number, hour: number) => {
+  const handleSubCellClick = (day: number, hour: number, subCell: number) => {
     if (onCellClick) {
-      onCellClick(day, hour);
+      onCellClick(day, hour, subCell);
     }
   };
 
@@ -64,26 +65,32 @@ export default function Grid({ onCellClick, events = [] }: GridProps) {
         {/* Grid Cells */}
         {days.map((_, dayIndex) => (
           <div key={dayIndex} className="border-r border-gray-300 last:border-r-0">
-            {hours.map((hour) => {
-              const event = getEventForCell(dayIndex, hour);
-              return (
-                <div
-                  key={hour}
-                  className={`h-8 border-b border-gray-200 cursor-pointer transition-colors ${
-                    event
-                      ? `${event.color || 'bg-blue-500'} text-white`
-                      : 'hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleCellClick(dayIndex, hour)}
-                >
-                  {event && (
-                    <div className="p-1 text-xs font-medium truncate">
-                      {event.title}
-                    </div>
-                  )}
+            {hours.map((hour) => (
+              <div key={hour} className="h-8 border-b border-gray-200">
+                <div className="grid grid-rows-4 h-full">
+                  {[0, 1, 2, 3].map((subCell) => {
+                    const event = getEventForSubCell(dayIndex, hour, subCell);
+                    return (
+                      <div
+                        key={subCell}
+                        className={`cursor-pointer transition-colors ${
+                          event
+                            ? `${event.color || 'bg-blue-500'} text-white`
+                            : 'hover:bg-gray-50'
+                        }`}
+                        onClick={() => handleSubCellClick(dayIndex, hour, subCell)}
+                      >
+                        {event && (
+                          <div className="p-0.5 text-xs font-medium truncate">
+                            {event.title}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         ))}
       </div>

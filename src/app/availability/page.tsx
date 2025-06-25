@@ -12,8 +12,8 @@ export default function Availability() {
     setIsEditing(!isEditing);
   };
 
-  const handleCellClick = (day: number, hour: number) => {
-    console.log(`Clicked: Day ${day}, Hour ${hour} in ${isEditing ? 'edit' : 'view'} mode`);
+  const handleCellClick = (day: number, hour: number, subCell: number) => {
+    console.log(`Clicked: Day ${day}, Hour ${hour}, Sub-cell ${subCell} in ${isEditing ? 'edit' : 'view'} mode`);
   };
 
   return (
