@@ -128,30 +128,43 @@ export default function Grid({
 
     const { startDay, startHour, startSubCell, currentDay, currentHour, currentSubCell } = dragState;
 
-    // Only create card if we dragged to a different position
+    // Only create cards if we dragged to a different position
     if (startDay !== currentDay || startHour !== currentHour || startSubCell !== currentSubCell) {
-      // Determine start and end positions
+      // Calculate the total number of subcells dragged
       const startTime = startHour * 4 + startSubCell;
       const endTime = currentHour * 4 + currentSubCell;
-      
-      const [startHourFinal, startSubCellFinal] = startTime <= endTime 
-        ? [startHour, startSubCell] 
-        : [currentHour, currentSubCell];
-      
-      const [endHourFinal, endSubCellFinal] = startTime <= endTime 
-        ? [currentHour, currentSubCell] 
-        : [startHour, startSubCell];
+      const [minTime, maxTime] = startTime <= endTime ? [startTime, endTime] : [endTime, startTime];
+      const totalSubCells = maxTime - minTime + 1;
 
-      onCardCreate({
-        title: 'New Event',
-        startDay: startDay,
-        startHour: startHourFinal,
-        startSubCell: startSubCellFinal,
-        endDay: startDay, // Same day for now
-        endHour: endHourFinal,
-        endSubCell: endSubCellFinal,
-        color: 'bg-blue-500',
-      });
+      // Create multiple 2-subcell cards
+      const numCards = Math.ceil(totalSubCells / 2);
+      
+      for (let i = 0; i < numCards; i++) {
+        const cardStartTime = minTime + (i * 2);
+        const cardEndTime = Math.min(cardStartTime + 1, maxTime); // Each card is 2 subcells (start + 1)
+        
+        // Skip creating a card if it would only be 1 subcell in size
+        if (cardEndTime - cardStartTime < 1) {
+          break;
+        }
+        
+        // Convert back to hour/subcell
+        const cardStartHour = Math.floor(cardStartTime / 4) + 5; // +5 because we start from 5 AM
+        const cardStartSubCell = cardStartTime % 4;
+        const cardEndHour = Math.floor(cardEndTime / 4) + 5;
+        const cardEndSubCell = cardEndTime % 4;
+
+        onCardCreate({
+          title: `New Event ${i + 1}`,
+          startDay: startDay,
+          startHour: cardStartHour,
+          startSubCell: cardStartSubCell,
+          endDay: startDay, // Same day for now
+          endHour: cardEndHour,
+          endSubCell: cardEndSubCell,
+          color: 'bg-blue-500',
+        });
+      }
     }
 
     setDragState(null);
@@ -167,26 +180,53 @@ export default function Grid({
       return null;
     }
 
+    // Calculate the total number of subcells dragged
     const startTime = startHour * 4 + startSubCell;
     const endTime = currentHour * 4 + currentSubCell;
+    const [minTime, maxTime] = startTime <= endTime ? [startTime, endTime] : [endTime, startTime];
+    const totalSubCells = maxTime - minTime + 1;
 
-    const startSubCellFinal = startTime <= endTime 
-      ? startSubCell 
-      : currentSubCell;
+    // Create multiple 2-subcell preview cards
+    const numCards = Math.ceil(totalSubCells / 2);
+    const previewCards = [];
 
-    const endSubCellFinal = startTime <= endTime 
-      ? currentSubCell 
-      : startSubCell;
+    for (let i = 0; i < numCards; i++) {
+      const cardStartTime = minTime + (i * 2);
+      const cardEndTime = Math.min(cardStartTime + 1, maxTime); // Each card is 2 subcells (start + 1)
+      
+      // Skip creating a preview card if it would only be 1 subcell in size
+      if (cardEndTime - cardStartTime < 1) {
+        break;
+      }
+      
+      // Convert back to hour/subcell
+      const cardStartHour = Math.floor(cardStartTime / 4) + 5; // +5 because we start from 5 AM
+      const cardStartSubCell = cardStartTime % 4;
+      const cardEndHour = Math.floor(cardEndTime / 4) + 5;
+      const cardEndSubCell = cardEndTime % 4;
 
-    return (
-      <div 
-        className="bg-blue-300/50 border-2 border-blue-500 border-dashed absolute pointer-events-none z-10"
-        style={{
-          gridRow: `${startSubCellFinal + 1} / ${endSubCellFinal + 2}`,
-          gridColumn: `${startDay + 2} / ${startDay + 3}`,
-        }}
-      />
-    );
+      // Calculate position for this preview card
+      const totalSubCellsInGrid = 17 * 4; // 17 hours * 4 sub-cells per hour
+      const startIndex = (cardStartHour - 5) * 4 + cardStartSubCell;
+      const endIndex = (cardEndHour - 5) * 4 + cardEndSubCell;
+      const top = ((startIndex - 20) / totalSubCellsInGrid) * 100; // -20 to subtract 5 cells (5 * 4 subcells)
+      const height = ((endIndex - startIndex + 1) / totalSubCellsInGrid) * 100;
+
+      previewCards.push(
+        <div 
+          key={i}
+          className="bg-blue-300/50 border-2 border-blue-500 border-dashed absolute pointer-events-none z-10"
+          style={{
+            left: 0,
+            right: 0,
+            top: `${top}%`,
+            height: `${height}%`,
+          }}
+        />
+      );
+    }
+
+    return previewCards;
   };
 
   return (
@@ -249,7 +289,9 @@ export default function Grid({
                             ? ''
                             : isInDragRange
                               ? 'bg-blue-200'
-                              : 'hover:bg-gray-50'
+                              : dragState?.isDragging
+                                ? ''
+                                : 'hover:bg-gray-50'
                         }`}
                         onClick={() => handleSubCellClick(dayIndex, hour, subCell)}
                         onMouseDown={() => handleMouseDown(dayIndex, hour, subCell)}
@@ -269,7 +311,7 @@ export default function Grid({
                 const totalSubCells = 17 * 4; // 17 hours * 4 sub-cells per hour
                 const startIndex = (event.startHour - 5) * 4 + event.startSubCell;
                 const endIndex = (event.endHour - 5) * 4 + event.endSubCell;
-                const top = (startIndex / totalSubCells) * 100;
+                const top = ((startIndex - 20) / totalSubCells) * 100; // -20 to subtract 5 cells (5 * 4 subcells)
                 const height = ((endIndex - startIndex + 1) / totalSubCells) * 100;
                 return (
                   <Card
@@ -293,12 +335,12 @@ export default function Grid({
                   />
                 );
               })}
+            
+            {/* Drag Preview for this day */}
+            {dragState?.isDragging && dragState.startDay === dayIndex && getDragPreview()}
           </div>
         ))}
       </div>
-
-      {/* Drag Preview */}
-      {getDragPreview()}
     </div>
   );
 }
