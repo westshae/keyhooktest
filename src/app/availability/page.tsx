@@ -1,16 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import Grid from '@/components/custom/Grid';
 
 export default function Availability() {
   const [isEditing, setIsEditing] = useState(false);
+  const [viewEvents] = useState([]);
+  const [editEvents] = useState([]);
 
   const toggleEdit = () => {
     setIsEditing(!isEditing);
   };
 
+  const handleCellClick = (day: number, hour: number) => {
+    console.log(`Clicked: Day ${day}, Hour ${hour} in ${isEditing ? 'edit' : 'view'} mode`);
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <div className="content">
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -24,19 +31,26 @@ export default function Availability() {
               {isEditing ? 'Save' : 'Edit'}
             </button>
           </div>
-          <div className="p-4 border rounded bg-gray-50">
-            <p className="text-lg">
-              Current state: <strong>{isEditing ? 'Editing' : 'Viewing'}</strong>
-            </p>
-            <p className="text-sm text-gray-600 mt-2">
-              {isEditing 
-                ? 'You are currently in edit mode. Click "Save" to return to view mode.' 
-                : 'You are currently in view mode. Click "Edit" to enter edit mode.'
-              }
-            </p>
-          </div>
         </div>
       </div>
+
+      {/* View Mode Grid */}
+      {!isEditing && (
+        <div className="mb-8">
+          <div className="overflow-x-auto border-2 border-blue-200 rounded-lg">
+            <Grid onCellClick={handleCellClick} events={viewEvents} />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Mode Grid */}
+      {isEditing && (
+        <div className="mb-8">
+          <div className="overflow-x-auto border-2 border-orange-200 rounded-lg">
+            <Grid onCellClick={handleCellClick} events={editEvents} />
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
