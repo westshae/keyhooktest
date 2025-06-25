@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Grid from '@/components/custom/Grid';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface Tenant {
   id: number;
@@ -273,69 +282,64 @@ export default function Book() {
       </main>
 
       {/* Confirmation Dialog */}
-      {showConfirmation && selectedCard && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Confirm Booking
-            </h3>
-            <p className="text-gray-600 mb-6">
+      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Booking</DialogTitle>
+            <DialogDescription>
               Are you sure you want to book this time slot for a viewing?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-gray-50 p-3 rounded mb-4">
+            <p className="text-sm text-gray-700">
+              <strong>Time:</strong> {selectedCard?.title}
             </p>
-            <div className="bg-gray-50 p-3 rounded mb-6">
-              <p className="text-sm text-gray-700">
-                <strong>Time:</strong> {selectedCard.title}
-              </p>
-              <p className="text-sm text-gray-700">
-                <strong>Tenant:</strong> {selectedTenant.name}
-              </p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleCancelBooking}
-                disabled={isBooking}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmBooking}
-                disabled={isBooking}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              >
-                {isBooking ? 'Booking...' : 'Confirm Booking'}
-              </button>
-            </div>
+            <p className="text-sm text-gray-700">
+              <strong>Tenant:</strong> {selectedTenant.name}
+            </p>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCancelBooking}
+              disabled={isBooking}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmBooking}
+              disabled={isBooking}
+            >
+              {isBooking ? 'Booking...' : 'Confirm Booking'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Success Popup */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Booking Confirmed!
-              </h3>
-              <p className="text-gray-600 mb-6">
-                We&apos;ve sent the confirmation to <span className="font-medium">{obfuscateEmail(selectedTenant.email)}</span>
-              </p>
-              <button
-                onClick={handleReturnToHome}
-                className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Return to Home
-              </button>
+      <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
+        <DialogContent>
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
+            <DialogTitle>Booking Confirmed!</DialogTitle>
+            <DialogDescription>
+              We&apos;ve sent the confirmation to <span className="font-medium">{obfuscateEmail(selectedTenant.email)}</span>
+            </DialogDescription>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              onClick={handleReturnToHome}
+              className="w-full"
+            >
+              Return to Home
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
