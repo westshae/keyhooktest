@@ -582,7 +582,7 @@ export default function Availability() {
                 isEditMode={isEditing}
                 dynamicTimeRange={false}
                 onCardCreate={handleCardCreate}
-                onCardDelete={handleCardDelete}
+                onCardDelete={isEditing ? handleCardDelete : undefined}
               />
             </div>
           </div>
