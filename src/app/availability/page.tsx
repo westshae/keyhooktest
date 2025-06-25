@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit3, Save, RefreshCw, X, Calendar, Eye, Trash2, ArrowLeft } from 'lucide-react';
+import { Edit3, Save, RefreshCw, X, Calendar, Eye, Trash2, ArrowLeft, Users, Mail, Phone, Clock, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 interface Card {
@@ -26,6 +26,7 @@ interface Card {
   color?: string;
   availabilityId?: number;
   tenantName?: string;
+  tenantId?: number;
 }
 
 interface BackendAvailability {
@@ -169,6 +170,7 @@ const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
     endSubCell,
     color: 'bg-gradient-to-r from-purple-500 to-purple-600', // Purple for bookings
     tenantName: booking.tenant_name,
+    tenantId: booking.tenant_id,
   };
 };
 
@@ -183,6 +185,8 @@ export default function Availability() {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
+  const [showTenantInfoModal, setShowTenantInfoModal] = useState(false);
+  const [selectedBookingCard, setSelectedBookingCard] = useState<Card | null>(null);
 
   // Load data from backend on component mount
   useEffect(() => {
@@ -446,6 +450,84 @@ export default function Availability() {
     return false;
   };
 
+  const handleCardClick = (card: {
+    id: string;
+    title: string;
+    startDay: number;
+    startHour: number;
+    startSubCell: number;
+    endDay: number;
+    endHour: number;
+    endSubCell: number;
+    color?: string;
+    availabilityId?: number;
+  }) => {
+    // Find the corresponding card from current events
+    const currentEvents = isEditing ? editEvents : viewEvents;
+    const fullCard = currentEvents.find(event => event.id === card.id);
+    
+    if (fullCard) {
+      if (fullCard.id.startsWith('booking-')) {
+        // This is a booking card - show tenant info modal
+        setSelectedBookingCard(fullCard);
+        setShowTenantInfoModal(true);
+      } else {
+        // This is an availability card - just log for now
+        console.log('Clicked on availability card:', fullCard);
+      }
+    }
+  };
+
+  const handleCloseTenantInfoModal = () => {
+    setShowTenantInfoModal(false);
+    setSelectedBookingCard(null);
+  };
+
+  // Helper function to get tenant contact info (mock data for now)
+  const getTenantContactInfo = (tenantId: number) => {
+    // In a real application, this would fetch from a tenants table
+    // For now, we'll use mock data based on the tenant ID
+    const mockTenants = {
+      1: { email: 'tenant1@example.com', phone: '+1 (555) 123-4567' },
+      2: { email: 'tenant2@example.com', phone: '+1 (555) 234-5678' },
+      3: { email: 'tenant3@example.com', phone: '+1 (555) 345-6789' },
+    };
+    
+    return mockTenants[tenantId as keyof typeof mockTenants] || {
+      email: 'contact@example.com',
+      phone: '+1 (555) 000-0000'
+    };
+  };
+
+  // Helper function to generate a random meeting place address
+  const getMeetingPlace = (tenantId: number) => {
+    const meetingPlaces = [
+      '123 Main Street, Downtown District',
+      '456 Oak Avenue, Riverside Heights',
+      '789 Pine Boulevard, Westside Gardens',
+      '321 Elm Court, Eastside Commons',
+      '654 Maple Drive, Northside Plaza',
+      '987 Cedar Lane, Southside Village',
+      '147 Birch Road, Central Park Area',
+      '258 Spruce Way, Harbor View District',
+      '369 Willow Street, Mountain View Heights',
+      '741 Aspen Circle, Lakefront Promenade'
+    ];
+    
+    // Use tenant ID to consistently get the same address for each tenant
+    const index = (tenantId - 1) % meetingPlaces.length;
+    return meetingPlaces[index] || meetingPlaces[0];
+  };
+
+  // Helper function to obfuscate email address
+  const obfuscateEmail = (email: string): string => {
+    const [localPart, domain] = email.split('@');
+    if (localPart.length <= 2) {
+      return `${localPart[0]}***@${domain}`;
+    }
+    return `${localPart[0]}***${localPart[localPart.length - 1]}@${domain}`;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
@@ -583,6 +665,7 @@ export default function Availability() {
                 dynamicTimeRange={false}
                 onCardCreate={handleCardCreate}
                 onCardDelete={isEditing ? handleCardDelete : undefined}
+                onCardClick={handleCardClick}
               />
             </div>
           </div>
@@ -606,6 +689,57 @@ export default function Availability() {
           </div>
         </div>
       </main>
+
+      {/* Tenant Information Modal */}
+      <Dialog open={showTenantInfoModal} onOpenChange={setShowTenantInfoModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-500" />
+              Tenant Booking Details
+            </DialogTitle>
+            <DialogDescription>
+              Viewing information for the booked appointment
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl mb-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Clock className="h-4 w-4 text-purple-500" />
+                <span><strong>Time:</strong> {selectedBookingCard?.title.split(' (')[0]}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Users className="h-4 w-4 text-purple-500" />
+                <span><strong>Tenant:</strong> {selectedBookingCard?.tenantName}</span>
+              </div>
+              {selectedBookingCard?.tenantId && (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span>{obfuscateEmail(getTenantContactInfo(selectedBookingCard.tenantId).email)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>{getTenantContactInfo(selectedBookingCard.tenantId).phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span><strong>Meeting Place:</strong> {getMeetingPlace(selectedBookingCard.tenantId)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleCloseTenantInfoModal}
+              className="gap-2"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Booking Deletion Confirmation Modal */}
       <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
