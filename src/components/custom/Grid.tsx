@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import React from 'react';
 import Card from './Card';
 
 interface GridProps {
@@ -67,6 +68,57 @@ export default function Grid({
     );
   };
 
+  // Helper function to convert time to subcell index
+  const timeToSubCellIndex = (hour: number, subCell: number) => {
+    return (hour - 5) * 4 + subCell; // -5 because we start from 5 AM
+  };
+
+  // Helper function to check if a time range overlaps with any existing events
+  const hasOverlap = (day: number, startHour: number, startSubCell: number, endHour: number, endSubCell: number) => {
+    const slotStartIndex = timeToSubCellIndex(startHour, startSubCell);
+    const slotEndIndex = timeToSubCellIndex(endHour, endSubCell);
+    const [minSlotIndex, maxSlotIndex] = slotStartIndex <= slotEndIndex ? [slotStartIndex, slotEndIndex] : [slotEndIndex, slotStartIndex];
+
+    // Check for any overlap with existing events
+    return events.some(event => {
+      if (event.startDay !== day) return false;
+      const eventStartIndex = timeToSubCellIndex(event.startHour, event.startSubCell);
+      const eventEndIndex = timeToSubCellIndex(event.endHour, event.endSubCell);
+      const [minEventIndex, maxEventIndex] = eventStartIndex <= eventEndIndex ? [eventStartIndex, eventEndIndex] : [eventEndIndex, eventStartIndex];
+      // Overlap if ranges intersect
+      return minSlotIndex <= maxEventIndex && maxSlotIndex >= minEventIndex;
+    });
+  };
+
+  // Helper function to find available 2-subcell slots in a range
+  const findAvailableSlots = (day: number, startHour: number, startSubCell: number, endHour: number, endSubCell: number) => {
+    const startIndex = timeToSubCellIndex(startHour, startSubCell);
+    const endIndex = timeToSubCellIndex(endHour, endSubCell);
+    const [minIndex, maxIndex] = startIndex <= endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+    
+    const availableSlots = [];
+    
+    // Look for consecutive 2-subcell slots, stepping by 2 to avoid overlap
+    for (let i = minIndex; i <= maxIndex - 1; i += 2) { // Step by 2 instead of 1
+      const slotStartHour = Math.floor(i / 4) + 5;
+      const slotStartSubCell = i % 4;
+      const slotEndHour = Math.floor((i + 1) / 4) + 5;
+      const slotEndSubCell = (i + 1) % 4;
+      
+      // Check if this 2-subcell slot is available
+      if (!hasOverlap(day, slotStartHour, slotStartSubCell, slotEndHour, slotEndSubCell)) {
+        availableSlots.push({
+          startHour: slotStartHour,
+          startSubCell: slotStartSubCell,
+          endHour: slotEndHour,
+          endSubCell: slotEndSubCell,
+        });
+      }
+    }
+    
+    return availableSlots;
+  };
+
   const handleSubCellClick = (day: number, hour: number, subCell: number) => {
     if (onCellClick) {
       onCellClick(day, hour, subCell);
@@ -130,41 +182,22 @@ export default function Grid({
 
     // Only create cards if we dragged to a different position
     if (startDay !== currentDay || startHour !== currentHour || startSubCell !== currentSubCell) {
-      // Calculate the total number of subcells dragged
-      const startTime = startHour * 4 + startSubCell;
-      const endTime = currentHour * 4 + currentSubCell;
-      const [minTime, maxTime] = startTime <= endTime ? [startTime, endTime] : [endTime, startTime];
-      const totalSubCells = maxTime - minTime + 1;
-
-      // Create multiple 2-subcell cards
-      const numCards = Math.ceil(totalSubCells / 2);
+      // Find available 2-subcell slots in the dragged range
+      const availableSlots = findAvailableSlots(startDay, startHour, startSubCell, currentHour, currentSubCell);
       
-      for (let i = 0; i < numCards; i++) {
-        const cardStartTime = minTime + (i * 2);
-        const cardEndTime = Math.min(cardStartTime + 1, maxTime); // Each card is 2 subcells (start + 1)
-        
-        // Skip creating a card if it would only be 1 subcell in size
-        if (cardEndTime - cardStartTime < 1) {
-          break;
-        }
-        
-        // Convert back to hour/subcell
-        const cardStartHour = Math.floor(cardStartTime / 4) + 5; // +5 because we start from 5 AM
-        const cardStartSubCell = cardStartTime % 4;
-        const cardEndHour = Math.floor(cardEndTime / 4) + 5;
-        const cardEndSubCell = cardEndTime % 4;
-
+      // Create cards for each available slot
+      availableSlots.forEach((slot, index) => {
         onCardCreate({
-          title: `New Event ${i + 1}`,
+          title: `New Event ${index + 1}`,
           startDay: startDay,
-          startHour: cardStartHour,
-          startSubCell: cardStartSubCell,
+          startHour: slot.startHour,
+          startSubCell: slot.startSubCell,
           endDay: startDay, // Same day for now
-          endHour: cardEndHour,
-          endSubCell: cardEndSubCell,
+          endHour: slot.endHour,
+          endSubCell: slot.endSubCell,
           color: 'bg-blue-500',
         });
-      }
+      });
     }
 
     setDragState(null);
@@ -180,41 +213,21 @@ export default function Grid({
       return null;
     }
 
-    // Calculate the total number of subcells dragged
-    const startTime = startHour * 4 + startSubCell;
-    const endTime = currentHour * 4 + currentSubCell;
-    const [minTime, maxTime] = startTime <= endTime ? [startTime, endTime] : [endTime, startTime];
-    const totalSubCells = maxTime - minTime + 1;
+    // Find available 2-subcell slots in the dragged range
+    const availableSlots = findAvailableSlots(startDay, startHour, startSubCell, currentHour, currentSubCell);
+    const previewCards: React.JSX.Element[] = [];
 
-    // Create multiple 2-subcell preview cards
-    const numCards = Math.ceil(totalSubCells / 2);
-    const previewCards = [];
-
-    for (let i = 0; i < numCards; i++) {
-      const cardStartTime = minTime + (i * 2);
-      const cardEndTime = Math.min(cardStartTime + 1, maxTime); // Each card is 2 subcells (start + 1)
-      
-      // Skip creating a preview card if it would only be 1 subcell in size
-      if (cardEndTime - cardStartTime < 1) {
-        break;
-      }
-      
-      // Convert back to hour/subcell
-      const cardStartHour = Math.floor(cardStartTime / 4) + 5; // +5 because we start from 5 AM
-      const cardStartSubCell = cardStartTime % 4;
-      const cardEndHour = Math.floor(cardEndTime / 4) + 5;
-      const cardEndSubCell = cardEndTime % 4;
-
+    availableSlots.forEach((slot, index) => {
       // Calculate position for this preview card
       const totalSubCellsInGrid = 17 * 4; // 17 hours * 4 sub-cells per hour
-      const startIndex = (cardStartHour - 5) * 4 + cardStartSubCell;
-      const endIndex = (cardEndHour - 5) * 4 + cardEndSubCell;
-      const top = ((startIndex - 20) / totalSubCellsInGrid) * 100; // -20 to subtract 5 cells (5 * 4 subcells)
+      const startIndex = timeToSubCellIndex(slot.startHour, slot.startSubCell);
+      const endIndex = timeToSubCellIndex(slot.endHour, slot.endSubCell);
+      const top = (startIndex / totalSubCellsInGrid) * 100;
       const height = ((endIndex - startIndex + 1) / totalSubCellsInGrid) * 100;
 
       previewCards.push(
         <div 
-          key={i}
+          key={index}
           className="bg-blue-300/50 border-2 border-blue-500 border-dashed absolute pointer-events-none z-10"
           style={{
             left: 0,
@@ -224,7 +237,7 @@ export default function Grid({
           }}
         />
       );
-    }
+    });
 
     return previewCards;
   };
@@ -311,7 +324,7 @@ export default function Grid({
                 const totalSubCells = 17 * 4; // 17 hours * 4 sub-cells per hour
                 const startIndex = (event.startHour - 5) * 4 + event.startSubCell;
                 const endIndex = (event.endHour - 5) * 4 + event.endSubCell;
-                const top = ((startIndex - 20) / totalSubCells) * 100; // -20 to subtract 5 cells (5 * 4 subcells)
+                const top = (startIndex / totalSubCells) * 100;
                 const height = ((endIndex - startIndex + 1) / totalSubCells) * 100;
                 return (
                   <Card
