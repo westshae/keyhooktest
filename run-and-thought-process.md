@@ -78,3 +78,13 @@ I also plan to include a section of the header for settings, such as 'reset all 
   - GET: Gets all bookings of a Tenant
   - POST: Adds a new booking for Tenant
   - DELETE: Deletes 1 booking for a Tenant
+
+# Comments regarding my approach.
+1. First, I defined in planning assumptions and the user-process required.
+2. Then, I defined the pages required based on the process, and simplified it down
+3. Then, I defined data structures and began implementation of the db schema.
+4. Once the DB schema was done, I determined the 'root' endpoint, in this case everything is defined by availability
+5. Implemented the availability endpoints excluding availability/free as that required booking, and determined I needed a better validation lib
+6. Implemented Zod, which I've previously used for clean validation.
+7. Just finished the tenant endpoints for booking, will implement availability/free, then pm bookings
+8. Next step after this is a basic refactor, then beginning to implement the frontend.
