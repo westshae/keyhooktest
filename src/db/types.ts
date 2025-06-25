@@ -67,3 +67,10 @@ export const deleteTenantBookingSchema = z.object({
 });
 
 export type DeleteTenantBookingParams = z.infer<typeof deleteTenantBookingSchema>;
+
+// Delete PM booking validation schema
+export const deletePmBookingSchema = z.object({
+  booking_id: z.number().positive().describe("Booking ID must be a positive integer"),
+});
+
+export type DeletePmBookingParams = z.infer<typeof deletePmBookingSchema>;
