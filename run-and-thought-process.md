@@ -62,3 +62,20 @@ I decided on separate Tenant pages because it is assumed the Tenant doesn't mana
 As for the choice of tech stack, I have most of my experience with ReactJS, however I've been using NextJS for my quick projects, especially with drizzle, shadcnUI, etc. I'd normally use NeonDB, but in this case since no deployment, I used SQLite with drizzle instead.
 There are a few choices that would need refining, such as how long the default slot length are, how much buffer is added, etc, however I consider this a user settings feature, in which I consider it out of scope for the PoC.
 I also plan to include a section of the header for settings, such as 'reset all data', and the tenant changing, etc.
+
+
+# Endpoint planning
+1. api/availability
+  - GET: Gets the currently stored availability of the PM
+  - PUT: Modify availability in bulk for PM
+  - POST: Add availability in bulk for PM
+  - DELETE: Remove in bulk availability
+2. api/availability/free
+  - GET: Gets all availabilities, minus existing bookings, for Tenant.
+3. api/bookings/pm
+  - GET: Gets all bookings for PM
+  - DELETE: Deletes 1 or many booking for PM
+4. api/bookings/tenant
+  - GET: Gets all bookings of a Tenant
+  - POST: Adds a new booking for Tenant
+  - DELETE: Deletes 1 booking for a Tenant
