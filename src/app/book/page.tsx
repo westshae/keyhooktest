@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Clock, Users, CheckCircle, ArrowLeft, Calendar, Mail, Phone } from 'lucide-react';
+import Link from 'next/link';
 
 interface Tenant {
   id: number;
@@ -98,7 +100,7 @@ const availabilityToCardFormat = (availability: Availability): Card => {
     endDay: startDay, // Same day for now
     endHour,
     endSubCell,
-    color: 'bg-green-500', // Green for available slots
+    color: 'bg-gradient-to-r from-green-500 to-green-600', // Green for available slots
     availabilityId: availability.id,
   };
 };
@@ -215,33 +217,53 @@ export default function Book() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg">Loading available time slots...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="text-lg text-muted-foreground">Loading available time slots...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Page-width header */}
-      <header className="flex-shrink-0 w-full bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Book Viewing</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      {/* Header */}
+      <header className="relative overflow-hidden border-b border-border/50 bg-white dark:bg-slate-800 shadow-sm">
+        <div className="absolute inset-0 gradient-bg opacity-5"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/"
+                className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 text-foreground" />
+              </Link>
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                <Clock className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Book Viewing</h1>
+                <p className="text-muted-foreground">
+                  Select a time slot to schedule your property viewing
+                </p>
+              </div>
             </div>
-            <div className="flex items-center">
-              <label htmlFor="tenant-select" className="sr-only">
-                Select Tenant
-              </label>
+            
+            {/* Tenant Selector */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>Booking for:</span>
+              </div>
               <select
-                id="tenant-select"
                 value={selectedTenant.id}
                 onChange={(e) => {
                   const tenant = tenantData.find(t => t.id === parseInt(e.target.value));
                   if (tenant) setSelectedTenant(tenant);
                 }}
-                className="block w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="px-4 py-2 border border-border/50 rounded-xl bg-white dark:bg-slate-700 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
               >
                 {tenantData.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>
@@ -251,25 +273,42 @@ export default function Book() {
               </select>
             </div>
           </div>
+          
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                {error}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Content div below header */}
-      <main className="flex-1 p-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto h-full">
-          <div className="bg-white shadow rounded-lg p-6 h-full flex flex-col">
-            <div className="mb-6 flex-shrink-0">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Available Time Slots</h2>
-              <p className="text-gray-600">Click on any green time slot to book a viewing for {selectedTenant.name}</p>
-              {error && (
-                <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
-                  {error}
+      {/* Main Content */}
+      <main className="flex-1 p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Instructions */}
+          <div className="mb-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                    How to book your viewing
+                  </h3>
+                  <p className="text-blue-800 dark:text-blue-200 text-sm">
+                    Click on any green time slot below to book a viewing for <strong>{selectedTenant.name}</strong>. 
+                    Available slots are shown in green, and you&apos;ll receive a confirmation email once booked.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
-            
-            {/* Grid Container - same size as availability page */}
-            <div className="flex-1 overflow-x-auto border-2 border-green-200 rounded-lg">
+          </div>
+
+          {/* Grid Container */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
+            <div className="h-[calc(100vh-320px)] min-h-[600px]">
               <Grid 
                 onCellClick={() => {}} // No cell click functionality needed
                 events={availableSlots}
@@ -278,25 +317,50 @@ export default function Book() {
               />
             </div>
           </div>
+
+          {/* Legend */}
+          <div className="mt-6 flex flex-wrap gap-6 justify-center">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-green-600 rounded"></div>
+              <span className="text-sm text-muted-foreground">Available Time Slots</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              <span className="text-sm text-muted-foreground">Unavailable Times</span>
+            </div>
+          </div>
         </div>
       </main>
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm Booking</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Confirm Booking
+            </DialogTitle>
             <DialogDescription>
               Are you sure you want to book this time slot for a viewing?
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-gray-50 p-3 rounded mb-4">
-            <p className="text-sm text-gray-700">
-              <strong>Time:</strong> {selectedCard?.title}
-            </p>
-            <p className="text-sm text-gray-700">
-              <strong>Tenant:</strong> {selectedTenant.name}
-            </p>
+          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl mb-4">
+            <div className="space-y-2">
+              <p className="text-sm text-foreground">
+                <strong>Time:</strong> {selectedCard?.title}
+              </p>
+              <p className="text-sm text-foreground">
+                <strong>Tenant:</strong> {selectedTenant.name}
+              </p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mail className="h-3 w-3" />
+                <span>{obfuscateEmail(selectedTenant.email)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="h-3 w-3" />
+                <span>{selectedTenant.phone}</span>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -309,8 +373,19 @@ export default function Book() {
             <Button
               onClick={handleConfirmBooking}
               disabled={isBooking}
+              className="gap-2"
             >
-              {isBooking ? 'Booking...' : 'Confirm Booking'}
+              {isBooking ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Booking...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  Confirm Booking
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -318,23 +393,27 @@ export default function Book() {
 
       {/* Success Popup */}
       <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md text-center">
           <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 mb-4">
+              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            <DialogTitle>Booking Confirmed!</DialogTitle>
-            <DialogDescription>
-              We&apos;ve sent the confirmation to <span className="font-medium">{obfuscateEmail(selectedTenant.email)}</span>
+            <DialogTitle className="text-xl">Booking Confirmed!</DialogTitle>
+            <DialogDescription className="text-base">
+              We&apos;ve sent the confirmation to <span className="font-medium text-foreground">{obfuscateEmail(selectedTenant.email)}</span>
             </DialogDescription>
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                Please check your email for viewing details and any additional instructions.
+              </p>
+            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="mt-6">
             <Button
               onClick={handleReturnToHome}
-              className="w-full"
+              className="w-full gap-2"
             >
+              <ArrowLeft className="h-4 w-4" />
               Return to Home
             </Button>
           </DialogFooter>

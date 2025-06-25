@@ -179,7 +179,7 @@ export default function Grid({
     const cellWidth = rect.width / 8; // 8 columns (time + 7 days)
     
     // Get the actual header height by finding the header element
-    const headerElement = gridRef.current.querySelector('.grid-cols-8.bg-gray-100');
+    const headerElement = gridRef.current.querySelector('.grid-cols-8.bg-gradient-to-r');
     const headerHeight = headerElement ? headerElement.getBoundingClientRect().height : 0;
     const gridContentHeight = rect.height - headerHeight;
     const cellHeight = gridContentHeight / 17; // 17 hours
@@ -225,7 +225,7 @@ export default function Grid({
           endDay: startDay, // Same day for now
           endHour: slot.endHour,
           endSubCell: slot.endSubCell,
-          color: 'bg-blue-500',
+          color: 'bg-gradient-to-r from-blue-500 to-blue-600',
         });
       });
     }
@@ -258,7 +258,7 @@ export default function Grid({
       previewCards.push(
         <div 
           key={index}
-          className="bg-blue-300/50 border-2 border-blue-500 border-dashed absolute pointer-events-none z-10"
+          className="bg-blue-400/30 border-2 border-blue-500 border-dashed absolute pointer-events-none z-10 rounded-lg backdrop-blur-sm"
           style={{
             left: 0,
             right: 0,
@@ -275,18 +275,18 @@ export default function Grid({
   return (
     <div 
       ref={gridRef}
-      className="border border-gray-300 rounded-lg overflow-hidden relative h-full flex flex-col"
+      className="border border-border/50 rounded-2xl overflow-hidden relative h-full flex flex-col bg-white dark:bg-slate-800 shadow-lg"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
       {/* Day Headers */}
-      <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-300 flex-shrink-0">
-        <div className="p-2 border-r border-gray-300 bg-gray-50"></div>
+      <div className="grid grid-cols-8 bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10 border-b border-border/50 flex-shrink-0">
+        <div className="p-3 border-r border-border/50 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800"></div>
         {days.map((day) => (
           <div
             key={day}
-            className="p-2 text-center font-medium text-gray-700 border-r border-gray-300 last:border-r-0"
+            className="p-3 text-center font-semibold text-foreground border-r border-border/50 last:border-r-0"
           >
             {day}
           </div>
@@ -296,11 +296,11 @@ export default function Grid({
       {/* Time Grid */}
       <div className="grid grid-cols-8 relative flex-1">
         {/* Time Labels */}
-        <div className="border-r border-gray-300 flex flex-col">
+        <div className="border-r border-border/50 flex flex-col bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
           {hours.map((hour) => (
             <div
               key={hour}
-              className="flex-1 border-b border-gray-200 flex items-center justify-end pr-2 text-xs text-gray-500 min-h-0"
+              className="flex-1 border-b border-border/30 flex items-center justify-end pr-3 text-xs text-muted-foreground min-h-0 font-medium"
             >
               {formatTime(hour)}
             </div>
@@ -309,9 +309,9 @@ export default function Grid({
 
         {/* Grid Cells */}
         {days.map((_, dayIndex) => (
-          <div key={dayIndex} className="border-r border-gray-300 last:border-r-0 relative flex flex-col">
+          <div key={dayIndex} className="border-r border-border/50 last:border-r-0 relative flex flex-col">
             {hours.map((hour) => (
-              <div key={hour} className="flex-1 border-b border-gray-200 min-h-0">
+              <div key={hour} className="flex-1 border-b border-border/30 min-h-0">
                 <div className="grid grid-rows-4 h-full">
                   {[0, 1, 2, 3].map((subCell) => {
                     const event = getEventForSubCell(dayIndex, hour, subCell);
@@ -327,14 +327,14 @@ export default function Grid({
                     return (
                       <div
                         key={subCell}
-                        className={`cursor-pointer transition-colors ${
+                        className={`cursor-pointer transition-all duration-200 ${
                           event
                             ? ''
                             : isInDragRange
-                              ? 'bg-blue-200'
+                              ? 'bg-blue-200/50 dark:bg-blue-800/30'
                               : dragState?.isDragging
                                 ? ''
-                                : 'hover:bg-gray-50'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-700/50'
                         }`}
                         onClick={() => handleSubCellClick(dayIndex, hour, subCell)}
                         onMouseDown={() => handleMouseDown(dayIndex, hour, subCell)}
