@@ -96,12 +96,6 @@ const backendToCardFormat = (availability: BackendAvailability): Card => {
   const startHour = hours;
   const startSubCell = Math.floor(minutes / 15);
   
-  // Calculate end time
-  const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + availability.time_in_minutes;
-  const endHour = Math.floor(totalEndMinutes / 60);
-  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
-  
   // Create title from time range
   const formatTime = (hour: number, subCell: number) => {
     const minutes = subCell * 15;
@@ -111,7 +105,15 @@ const backendToCardFormat = (availability: BackendAvailability): Card => {
     return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
   };
   
-  const title = `${formatTime(startHour, startSubCell)} - ${formatTime(endHour, endSubCell)}`;
+  // Calculate the actual end time by adding 30 minutes to the start time
+  const startTime = formatTime(startHour, startSubCell);
+  const totalStartMinutes = startHour * 60 + startSubCell * 15;
+  const totalEndMinutes = totalStartMinutes + 30; // Add 30 minutes for the slot duration
+  const endHour = Math.floor(totalEndMinutes / 60);
+  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
+  const endTime = formatTime(endHour, endSubCell);
+  
+  const title = `${startTime} - ${endTime}`;
   
   return {
     id: `card-${availability.id}`,
@@ -140,12 +142,6 @@ const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
   const startHour = hours;
   const startSubCell = Math.floor(minutes / 15);
   
-  // Calculate end time
-  const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + availability.time_in_minutes;
-  const endHour = Math.floor(totalEndMinutes / 60);
-  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
-  
   // Create title from time range
   const formatTime = (hour: number, subCell: number) => {
     const minutes = subCell * 15;
@@ -155,7 +151,15 @@ const bookingToCardFormat = (booking: BookingWithAvailability): Card => {
     return `${hour}:${minutes.toString().padStart(2, '0')} AM`;
   };
   
-  const title = `${formatTime(startHour, startSubCell)} - ${formatTime(endHour, endSubCell)} (${booking.tenant_name})`;
+  // Calculate the actual end time by adding 30 minutes to the start time
+  const startTime = formatTime(startHour, startSubCell);
+  const totalStartMinutes = startHour * 60 + startSubCell * 15;
+  const totalEndMinutes = totalStartMinutes + 30; // Add 30 minutes for the slot duration
+  const endHour = Math.floor(totalEndMinutes / 60);
+  const endSubCell = Math.floor((totalEndMinutes % 60) / 15);
+  const endTime = formatTime(endHour, endSubCell);
+  
+  const title = `${startTime} - ${endTime} (${booking.tenant_name})`;
   
   return {
     id: `booking-${booking.id}`,
@@ -573,7 +577,7 @@ export default function Availability() {
                 onCellClick={handleCellClick} 
                 events={isEditing ? editEvents : viewEvents}
                 isEditMode={isEditing}
-                dynamicTimeRange={true}
+                dynamicTimeRange={false}
                 onCardCreate={handleCardCreate}
                 onCardDelete={handleCardDelete}
               />

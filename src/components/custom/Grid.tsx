@@ -107,17 +107,22 @@ export default function Grid({
   };
 
   // Helper function to format time range for card titles
-  const formatTimeRange = (startHour: number, startSubCell: number, endHour: number, endSubCell: number) => {
-    const startMinutes = startSubCell * 15;
-    const endMinutes = endSubCell * 15;
-    
+  const formatTimeRange = (startHour: number, startSubCell: number) => {
+    // Always add 30 minutes to the start time for the end time
+    const startMinutesTotal = startHour * 60 + startSubCell * 15;
+    const endMinutesTotal = startMinutesTotal + 30;
+    const endHour = Math.floor(endMinutesTotal / 60);
+    const endSubCell = Math.floor((endMinutesTotal % 60) / 15);
+
     let startTime = formatTime(startHour);
     let endTime = formatTime(endHour);
-    
+
     // Always add minutes to the format
+    const startMinutes = startSubCell * 15;
+    const endMinutes = endSubCell * 15;
     startTime = startTime.replace(/(\d+)(\s*[AP]M)/, `$1:${startMinutes.toString().padStart(2, '0')}$2`);
     endTime = endTime.replace(/(\d+)(\s*[AP]M)/, `$1:${endMinutes.toString().padStart(2, '0')}$2`);
-    
+
     return `${startTime} - ${endTime}`;
   };
 
@@ -248,7 +253,7 @@ export default function Grid({
       
       // Create cards for each available slot
       availableSlots.forEach((slot) => {
-        const timeTitle = formatTimeRange(slot.startHour, slot.startSubCell, slot.endHour, slot.endSubCell);
+        const timeTitle = formatTimeRange(slot.startHour, slot.startSubCell);
         onCardCreate({
           title: timeTitle,
           startDay: startDay,
